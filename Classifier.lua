@@ -132,6 +132,12 @@ local guildNouns = {"guild","guilds","gilde","gilden","guilde","gildia","static"
 local raidWeekdays = {"monday","tuesday","wednesday","thursday","friday",
   "saturday","sunday","mondays","tuesdays","wednesdays","thursdays",
   "fridays","saturdays","sundays"}
+-- Short weekday labels, German and Romance-language raid schedules.
+-- These are meaningful only in conjunction with an actual raid/dungeon and a clock time.
+local raidDayAliases = {"mon","tue","tues","wed","weds","thu","thur","thurs",
+  "fri","sat","sun","mo","di","mi","fr","sa",
+  "lunes","martes","miercoles","jueves","viernes","sabado","domingo",
+  "lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"}
 
 local playerClasses = {"mage","mages","shaman","shamans","warlock","warlocks",
   "lock","locks","druid","druids","priest","priests","spriest",
@@ -314,11 +320,17 @@ local function lfg(text, lower, message)
   local organizedGroup = any(text, {"pug", "pugs", "raid", "raids", "runs",
       "run", "raiding", "group", "groups"}) or
       somePhrase(text, {"raid team", "raid night", "raid nights"})
-  local datedGroup = any(text, raidWeekdays) or
+  local explicitWeekday = any(text, raidWeekdays) or any(text, raidDayAliases)
+  local datedGroup = explicitWeekday or
       any(text, {"tonight", "tomorrow", "weekend", "weekends", "weekly"}) or
       somePhrase(text, {"raid schedule", "raid times", "server time"})
   local clockTime = string.find(message, "%d%d?:%d%d") ~= nil
   local scheduleContext = datedGroup or clockTime
+  -- In World Chat, a dungeon/raid + weekday + clock time is a schedule
+  -- advertisement even without LFM, a counted role or an invite. Word
+  -- order does not matter, and conversational phrasing is not an exemption.
+  local scheduledDungeonListing = explicitWeekday and clockTime and
+      (rosterDungeon or organizedGroup)
   -- Queries and reports about player demand are not recruiting posts.
   local demandDiscussion = string.find(message, "?", 1, true) ~= nil or
       somePhrase(text, {"i heard", "i read", "someone said", "they said",
@@ -370,8 +382,9 @@ local function lfg(text, lower, message)
       "people say", "can someone explain"})
   if (countedLfRoleOrClass or countedLookingRoleOrClass) and
       (slotDiscussion or formatDiscussion) and not dungeonRosterCount then return r end
-  r.ignoreQuestionPenalty = dungeonRosterCount
-  r.intent = dungeonRosterCount or scheduledRoleDemand or leadingLfDungeon or
+  r.ignoreQuestionPenalty = dungeonRosterCount or scheduledDungeonListing
+  r.intent = scheduledDungeonListing or dungeonRosterCount or
+      scheduledRoleDemand or leadingLfDungeon or
       needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
     (explicit and (not (hasLfSlots or lfmSlots) or slotIntent)) or
@@ -381,6 +394,9 @@ local function lfg(text, lower, message)
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
   if dungeonRosterCount then add(r, 12, "dungeon + player slot + role/class in any order") end
+  if scheduledDungeonListing then
+    add(r, 12, "dungeon/raid + weekday + scheduled clock time")
+  end
   if leadingLfDungeon then add(r, 5, "direct LF + dungeon destination") end
   if needRoleListing then add(r, 10, "numbered need for role/class") end
   if compactRosterListing then add(r, 10, "compact dungeon group roster") end
@@ -698,8 +714,24 @@ local function guild(text, lower, message)
   local taggedClassRecruitment = (guildTag or noun) and playerSearch and
       (any(text, roles) or any(text, playerClasses)) and
       (team or raid or discord or noun or guildTag) and not advertisementDiscussion
+  -- Guilds often recruit without mentioning classes, raids or the literal
+  -- word "guild": <Secret Hideout> looking for friendly players ... welcome.
+  -- The guild tag together with an explicit member search is sufficient.
+  local openAudience = any(text, {"players", "members", "raiders", "people", "recruits"})
+  local taggedOpenRecruitment = guildTag and openAudience and
+      (playerSearch or (welcome and somePhrase(text, {
+        "players are welcome", "members are welcome", "all players welcome",
+        "all dedicated players", "everyone is welcome"}))) and
+      not advertisementDiscussion
   local spanishGuildPromo = (guildTag or noun) and spanishInvitation and
       (raid or spanishCommunity) and not advertisementDiscussion
+  -- Spanish recruitment may say just "recluta" with a member roster and
+  -- activity, rather than using an explicit invite/contact phrase.
+  local spanishRecruiting = any(text, {"recluta", "reclutamos", "reclutando",
+      "reclutamiento", "reclutamientos"})
+  local spanishOpenRecruitment = guildTag and spanishRecruiting and
+      any(text, {"miembros", "jugadores", "players", "members"}) and
+      (raid or discord or spanishCommunity) and not advertisementDiscussion
   -- Explicit guild invitation + raid + time/timezone is a recruitment ad
   -- whatever its word order. A trailing '?' does not exempt this structure.
   local inviteCue = invite or spanishInvitation or
@@ -717,16 +749,22 @@ local function guild(text, lower, message)
       csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
-       germanRaidRecruitment or taggedClassRecruitment or
-       spanishGuildPromo or timedGuildInvitation
+       germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
+       spanishGuildPromo or spanishOpenRecruitment or timedGuildInvitation
   if not r.intent then return r end
   if taggedClassRecruitment then
     add(r, 10, "guild seeking classes/roles for roster")
     if discord then add(r, 2, "guild recruitment contact") end
   end
+  if taggedOpenRecruitment then
+    add(r, 12, "tagged guild recruiting players/members")
+  end
   if spanishGuildPromo then
     add(r, 11, "Spanish community/guild invitation")
     if raid then add(r, 2, "raid activity advertised") end
+  end
+  if spanishOpenRecruitment then
+    add(r, 20, "Spanish guild recruiting raid members")
   end
   if timedGuildInvitation then
     add(r, 12, "guild tag + invite + raid time/timezone")
@@ -762,7 +800,7 @@ local function guild(text, lower, message)
   if germanRaidRecruitment then
     add(r, 17, "German raid roster recruitment")
     if germanOpenSlots then add(r, 3, "open raid places") end
-    if germanTimedRaid then add(r, 2, "scheduled raid time") end
+    if germanTimedRaid then add(r, 15, "scheduled raid time + German recruiter") end
   end
   if softRecruitment then
     add(r, 5, "guild-style invitation call-to-action")

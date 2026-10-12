@@ -17,6 +17,7 @@ local lfgAds={
  'DPS1 DEADMINES?', 'DEADMINES DPS1?', 'Deadmines HEAL 2DPS?',
  'What does LF1DPS for DEADMINES mean?', 'Kara10 DEADMINES DPS1?',
  'LFM DEADMINES 1 MAGE?', '1 tank needed for BRD?',
+ 'Why are Mages needed for Friday PUG 17:00 ST?',
 }
 local guildAds={
  '<Thunder Ale Brewing Co.> is starting fresh here on Octowow! One of Turtle WoW\'s top speedrun guilds, now looking mostly for Mages/Shamans/Warlocks for our main rooster! [https://discord.gg/99VREUC4P] for more information!',
@@ -41,7 +42,6 @@ local ordinary={
  'Where can I find guilds for raids?',
  'What does susurro para inv mean?',
  'My guild does not do raids at 20:30 CET',
- 'Why are Mages needed for Friday PUG 17:00 ST?',
  'I am searching for my guild members in Stormwind',
 }
 for _,mode in ipairs({'careful','balanced','aggressive'}) do
