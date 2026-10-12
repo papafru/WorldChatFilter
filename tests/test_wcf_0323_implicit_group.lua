@@ -30,6 +30,10 @@ local ads={
  'BRD HEAL 2DPS',
  'SFK HEAL 1TANK',
  'Deadmines tank 2 heal',
+  -- Explicit preference: all dungeon + count + role/class combinations are filtered.
+ 'DEADMINES HEAL 2DPS?',
+ 'I heard people advertising Deadmines heal 2dps',
+ 'We did Deadmines with heal 2dps yesterday',
 }
 local chats={
  'What does LF Scarlet Graveyard mean?',
@@ -42,9 +46,6 @@ local chats={
  'Need 1 heal potion',
  'Need 1 healing spell for my build',
  'I need 1 Mage for my screenshot',
- 'DEADMINES HEAL 2DPS?',
- 'I heard people advertising Deadmines heal 2dps',
- 'We did Deadmines with heal 2dps yesterday',
  'Deadmines is great for healers and DPS',
  'I want to play a healer in Deadmines',
  'Anyone know if Windhorn is nearby?',

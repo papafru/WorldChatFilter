@@ -18,6 +18,14 @@ local adLFG={
   'BRD 1HEALER',
   'SFK 1 tank',
   'DEADMINES HEAL 2DPS',
+  -- Explicit preference: all dungeon + count + role/class combinations are filtered.
+  'DEADMINES 1DPS?',
+  'What does DEADMINES 1DPS mean?',
+  'Deadmines 1dps is a strange composition',
+  'I saw someone type DEADMINES 1DPS',
+  'Deadmines 1DPS was enough last night',
+  'Was bedeutet Gesucht 1 Shadow Priest für MC 19:30?',
+  'Gestern waren noch Raidplätze frei und 1 Priest war gesucht für MC',
 }
 local adGuild={
   '<Oktagon> hat noch feste Raidplätze frei! Gesucht: 1 Shadow Priest, 1 Healschami, 1 Healdruid & 1 Retri! MC Mi 19:30 Uhr (~50 Min) SR+ &',
@@ -26,15 +34,8 @@ local adGuild={
   'Raidplatze frei, gesucht 1 Healdruid!',
 }
 local conversations={
-  'DEADMINES 1DPS?',
-  'What does DEADMINES 1DPS mean?',
-  'Deadmines 1dps is a strange composition',
-  'I saw someone type DEADMINES 1DPS',
-  'Deadmines 1DPS was enough last night',
   'DEADMINES 1 potion',
   'Deadmines is nice for DPS',
-  'Was bedeutet Gesucht 1 Shadow Priest für MC 19:30?',
-  'Gestern waren noch Raidplätze frei und 1 Priest war gesucht für MC',
   'Ich habe gehört dass Raidplätze frei sind und 1 Healschami gesucht wird',
   'MC 19:30 Uhr ist ein guter Raidzeitpunkt',
   'We had a Shadow Priest for MC yesterday',

@@ -171,6 +171,35 @@ local function countGroupSearch(text, pattern)
   end
 end
 
+-- Find compact player counts anywhere in a message, including DPS1 or 1DPS.
+-- Continue after non-role tokens such as "Kara10", not just the first match.
+local function countedGroupTypeAnywhere(text, reverse)
+  local at = 1
+  while true do
+    local from, finish, count, noun
+    if reverse then
+      from, finish, noun, count = string.find(text, " ([%a]+)(%d+) ", at)
+    else
+      from, finish, count, noun = string.find(text, " (%d+)([%a]+) ", at)
+    end
+    if not from then return false end
+    if groupTypes[noun] and tonumber(count) and tonumber(count) > 0 then
+      return true
+    end
+    at = finish  -- retain trailing word separator for an adjacent next token
+  end
+end
+
+local function separatePositiveCount(text)
+  local at = 1
+  while true do
+    local from, finish, count = string.find(text, " (%d+) ", at)
+    if not from then return false end
+    if tonumber(count) and tonumber(count) > 0 then return true end
+    at = finish
+  end
+end
+
 -- Reuse this static list instead of allocating a new table for every
 -- summoning-directory advertisement (especially important on busy channels).
 local summonDestinations = {"booty bay", "blackrock mountain", "blackfathom deeps",
@@ -252,6 +281,23 @@ local function lfg(text, lower, message)
   local playerClass = any(text, playerClasses)
   local dungeon = any(text, dungeons)
   local activity = any(text, activities)
+  -- A dungeon/raid + a player count + a class or group role is a strong
+  -- roster signal in ANY order. The question mark is allowed ("DEADMINES
+  -- 1DPS?"). Match both 1DPS/DPS1 and separate 1 DPS/DPS 1, avoiding a
+  -- blacklist of dungeon names or individual ad strings.
+  local dungeonRosterCount = false
+  -- "17:00 ST" means server time, not Sunken Temple. Other dungeon
+  -- names in the same message still count (e.g. "BRD 1DPS 17:00 ST").
+  local rosterDungeon = dungeon
+  if rosterDungeon and string.find(lower, "%d%d?:%d%d%s*st") then
+    rosterDungeon = any(string.gsub(text, " st ", " "), dungeons)
+  end
+  if rosterDungeon then
+    dungeonRosterCount = countedLfRoleOrClass or countedLookingRoleOrClass or
+      ((role or playerClass) and separatePositiveCount(text)) or
+      countedGroupTypeAnywhere(text, false) or
+      countedGroupTypeAnywhere(text, true)
+  end
   local summoning = any(text, {"summon","summons","summoning","sum","summ"})
   local typeCount = 0
   if any(text, {"tank","tanks"}) then typeCount = typeCount + 1 end
@@ -323,8 +369,9 @@ local function lfg(text, lower, message)
       "how do you write", "someone said", "i heard", "people type",
       "people say", "can someone explain"})
   if (countedLfRoleOrClass or countedLookingRoleOrClass) and
-      (slotDiscussion or formatDiscussion) then return r end
-  r.intent = scheduledRoleDemand or leadingLfDungeon or
+      (slotDiscussion or formatDiscussion) and not dungeonRosterCount then return r end
+  r.ignoreQuestionPenalty = dungeonRosterCount
+  r.intent = dungeonRosterCount or scheduledRoleDemand or leadingLfDungeon or
       needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
     (explicit and (not (hasLfSlots or lfmSlots) or slotIntent)) or
@@ -333,6 +380,7 @@ local function lfg(text, lower, message)
     (need and role and (dungeon or activity or typeCount >= 2 or summoning)) or
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
+  if dungeonRosterCount then add(r, 12, "dungeon + player slot + role/class in any order") end
   if leadingLfDungeon then add(r, 5, "direct LF + dungeon destination") end
   if needRoleListing then add(r, 10, "numbered need for role/class") end
   if compactRosterListing then add(r, 10, "compact dungeon group roster") end
@@ -632,14 +680,57 @@ local function guild(text, lower, message)
         somePhrase(text, {"now looking for", "currently looking for", "looking for raiders"}))
   local recruitingContext = roster or team or raid or schedule or discord or promo or
       any(text, {"wanted","looking","seeking","based","new","recruits"})
+  -- Tagged guild recruiting is not necessarily a scheduled weekly roster.
+  -- Recognize player/class search with optional adverbs, and Spanish
+  -- community announcements like "comunidad activa ... te esperamos".
+  local guildTag = string.find(message, "<[^<>]+>") ~= nil
+  local playerSearch = searching or somePhrase(text, {
+      "looking mostly for", "looking mainly for", "looking primarily for",
+      "now looking", "looking to recruit", "recruiting players"})
+  local spanishInvitation = somePhrase(text, {
+      "te esperamos", "los esperamos", "os esperamos",
+      "susurro para inv", "susurro para invitacion", "susurro para invite",
+      "susurrame para inv", "whisper para inv", "escribeme para inv",
+      "escribenos para inv", "unete a nosotros", "unete al guild",
+      "buscamos jugadores", "reclutamos jugadores"})
+  local spanishCommunity = any(text, {"comunidad", "comunidades", "hermandad"}) or
+      somePhrase(text, {"comunidad activa", "buena onda", "cero toxicidad"})
+  local taggedClassRecruitment = (guildTag or noun) and playerSearch and
+      (any(text, roles) or any(text, playerClasses)) and
+      (team or raid or discord or noun or guildTag) and not advertisementDiscussion
+  local spanishGuildPromo = (guildTag or noun) and spanishInvitation and
+      (raid or spanishCommunity) and not advertisementDiscussion
+  -- Explicit guild invitation + raid + time/timezone is a recruitment ad
+  -- whatever its word order. A trailing '?' does not exempt this structure.
+  local inviteCue = invite or spanishInvitation or
+      any(text, {"inv", "invitar", "invitacion", "invitaciones"}) or
+      somePhrase(text, {"whisper for invite", "ask for invite", "invite available"})
+  local timeZone = any(text, {"gmt", "utc", "cet", "cest", "eet", "eest",
+      "timezone", "serverzeit", "uhr"}) or
+      somePhrase(text, {"server time", "realm time", "time zone"})
+  local raidTime = string.find(message, "%d%d?:%d%d") ~= nil or timeZone
+  local timedGuildInvitation = guildTag and inviteCue and raid and raidTime
+  r.ignoreQuestionPenalty = timedGuildInvitation
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
       csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
-       germanRaidRecruitment
+       germanRaidRecruitment or taggedClassRecruitment or
+       spanishGuildPromo or timedGuildInvitation
   if not r.intent then return r end
+  if taggedClassRecruitment then
+    add(r, 10, "guild seeking classes/roles for roster")
+    if discord then add(r, 2, "guild recruitment contact") end
+  end
+  if spanishGuildPromo then
+    add(r, 11, "Spanish community/guild invitation")
+    if raid then add(r, 2, "raid activity advertised") end
+  end
+  if timedGuildInvitation then
+    add(r, 12, "guild tag + invite + raid time/timezone")
+  end
   if guildCommunityRecruitment then
     add(r, 8, "guild advertising for players with community/activity pitch")
     add(r, 3, "explicit member search")
@@ -669,7 +760,7 @@ local function guild(text, lower, message)
     add(r, 2, "recruiter contact invitation")
   end
   if germanRaidRecruitment then
-    add(r, 9, "German raid roster recruitment")
+    add(r, 17, "German raid roster recruitment")
     if germanOpenSlots then add(r, 3, "open raid places") end
     if germanTimedRaid then add(r, 2, "scheduled raid time") end
   end
@@ -966,8 +1057,10 @@ function WCF.ClassifyMessage(message, allowDisabled)
     local r = classifiers[i](text, lower, message)
     local active = allowDisabled or (WCF.db and WCF.db[settingNames[r.category]])
     if r.intent and active then
-      r.score = r.score - penalty
-      if r.score < 0 then r.score = 0 end
+      if not r.ignoreQuestionPenalty then
+        r.score = r.score - penalty
+        if r.score < 0 then r.score = 0 end
+      end
       if not best or r.score > best.score then
         best = r
       end
@@ -977,7 +1070,9 @@ function WCF.ClassifyMessage(message, allowDisabled)
   local threshold = thresholds[sensitivity] or 7
   if not best then return nil, 0, "no advertising intent", false, threshold end
   local why = table.concat(best.clues or {}, ", ")
-  if penalty > 0 then why = why .. ", conversational/question penalty (-" .. penalty .. ")" end
+  if penalty > 0 and not best.ignoreQuestionPenalty then
+    why = why .. ", conversational/question penalty (-" .. penalty .. ")"
+  end
   return best.category, best.score, why, best.score >= threshold, threshold
 end
 
