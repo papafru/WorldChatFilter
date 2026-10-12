@@ -299,11 +299,14 @@ local function lfg(text, lower, message)
   local needRoleListing = countedNeedRoleOrClass and not needCountDiscussion and
       (dungeon or activity or contains(text, "for") or
        string.find(text, " %d+%s*[%a]+ $"))
-  -- "DEADMINES HEAL 2DPS" has no recruitment verb. Interpret it as a
-  -- group composition listing only when a dungeon LEADS the message and
-  -- both a counted role/class and another ordinary role are present.
+  -- Dungeon-led compact rosters can contain either an extra role
+  -- ("DEADMINES HEAL 2DPS") or just one counted slot ("DEADMINES 1DPS").
+  -- For the single-slot form require exactly dungeon + count + role/class;
+  -- this avoids blocking longer conversations mentioning the same shorthand.
+  local singleSlotRoster = startsDungeon and standaloneCountedRole and
+      string.find(text, "^ [%w]+ %d+%s*[%a]+ $") ~= nil
   local compactRosterListing = startsDungeon and standaloneCountedRole and
-      role and not plainDiscussion
+      (role or singleSlotRoster) and not plainDiscussion
   -- Require group formation semantics, not just dungeon names and class words.
   -- A standalone LF<number>M in a sentence about the shorthand is not an ad.
   -- When it does not lead the sentence, require group context before blocking.
@@ -551,6 +554,25 @@ local function guild(text, lower, message)
       ((recurringRaids and (progression or rosterStructure)) or
        (progression and rosterStructure) or
        (rosterStructure and team))
+  -- German raid recruitment often uses "Raidplaetze frei" + "Gesucht" and
+  -- localized class nicknames without the literal words "guild" or "LFM".
+  -- normalize() folds umlauts: Raidplätze -> raidplatze. Require a player
+  -- search, actual class/role and either open raid slots or a scheduled/
+  -- counted raid. Never use a guild's or raid group's name as a trigger.
+  local germanSearch = any(text, {"gesucht", "suchen", "suche", "sucht"})
+  local germanOpenSlots = any(text, {"raidplatz", "raidplatze"}) and
+      any(text, {"frei", "offen", "verfugbar"})
+  local germanRoles = roster or any(text, {"healschami", "healdruid", "healpala",
+      "healpriester", "schami", "retri", "heiler", "shadowpriester"})
+  local germanCountedSlot = string.find(text, " %d+ ") ~= nil or
+      string.find(text, " %d+[%a]+ ") ~= nil
+  local germanTimedRaid = raid and string.find(message, "%d%d?:%d%d") ~= nil
+  local germanDiscussion = advertisementDiscussion or somePhrase(text, {
+      "was bedeutet", "was heisst", "wie meint", "ich habe gelesen",
+      "ich habe gehort", "jemand sagte", "gestern", "letzte woche", "damals"})
+  local germanRaidRecruitment = germanSearch and germanRoles and
+      (germanOpenSlots or (raid and germanCountedSlot) or germanTimedRaid) and
+      not germanDiscussion
   -- Recruitment of named classes for a *recurring raid roster*. Require
   -- independent signals (player search + class, raid + weekly scheduling,
   -- organization/progression, and an invitation to contact the recruiter).
@@ -615,7 +637,8 @@ local function guild(text, lower, message)
       (recruiting and recruitingContext) or (invite and noun and promo) or
       csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
-      ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment
+      ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
+       germanRaidRecruitment
   if not r.intent then return r end
   if guildCommunityRecruitment then
     add(r, 8, "guild advertising for players with community/activity pitch")
@@ -644,6 +667,11 @@ local function guild(text, lower, message)
     add(r, 8, "scheduled raid roster seeking specific classes")
     add(r, 2, "recurring raid day(s) + organized progression")
     add(r, 2, "recruiter contact invitation")
+  end
+  if germanRaidRecruitment then
+    add(r, 9, "German raid roster recruitment")
+    if germanOpenSlots then add(r, 3, "open raid places") end
+    if germanTimedRaid then add(r, 2, "scheduled raid time") end
   end
   if softRecruitment then
     add(r, 5, "guild-style invitation call-to-action")
