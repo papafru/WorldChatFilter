@@ -58,7 +58,7 @@ function SendChatMessage() error('unexpected sending') end
 SocialChatDB=nil
 WorldChatFilterDB={enabled=true,filterTrade=true,filterLFG=false,filterGuild=true,filterServices=true,filterRepeats=true,sensitivity='aggressive',minimapAngle=117, stats={total=0,Trade=0,LFG=0,Guild=0,Services=0,Repeats=0}}
 local prevDB=WorldChatFilterDB
-local base='WorldChatFilter/'
+local base=''
 dofile(base..'Core.lua')
 dofile(base..'Statistics.lua')
 dofile(base..'Classifier.lua')

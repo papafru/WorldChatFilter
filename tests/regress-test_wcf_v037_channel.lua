@@ -7,7 +7,7 @@ function GetTime() return mock.now end
 function UnitName() return 'MyCharacter' end
 function ChatFrame_OnEvent(evt) mock.delivered=mock.delivered+1 end
 WorldChatFilterDB={sensitivity='aggressive', enabled=true}
-local root='WorldChatFilter/'
+local root=''
 dofile(root..'Core.lua')
 dofile(root..'Statistics.lua')
 dofile(root..'Classifier.lua')

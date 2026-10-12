@@ -9,7 +9,7 @@ function GetTime() return now end
 function ChatFrame_OnEvent() delivered=delivered+1 end
 function CreateFrame() return {RegisterEvent=function() end, SetScript=function() end} end
 WorldChatFilterDB={enabled=true,filterGuild=true,filterLFG=true,filterServices=true,filterTrade=true,filterRepeats=true,sensitivity='balanced'}
-for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile('WorldChatFilter/'..f) end
+for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile(''..f) end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter
 assert(W.VERSION=='1.0.0')

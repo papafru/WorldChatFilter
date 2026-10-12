@@ -7,10 +7,10 @@ end
 function ChatFrame_OnEvent() end
 function UnitName() return 'Mychar' end
 WorldChatFilterDB={}
-dofile('WorldChatFilter/Core.lua')
-dofile('WorldChatFilter/Statistics.lua')
-dofile('WorldChatFilter/Classifier.lua')
-dofile('WorldChatFilter/Filter.lua')
+dofile('Core.lua')
+dofile('Statistics.lua')
+dofile('Classifier.lua')
+dofile('Filter.lua')
 WorldChatFilter.Initialize()
 local ads = {
  'LF BM REP RUNS PST',

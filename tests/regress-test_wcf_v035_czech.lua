@@ -4,7 +4,7 @@ DEFAULT_CHAT_FRAME={AddMessage=function() end}
 function CreateFrame() return {RegisterEvent=function() end,SetScript=function() end} end
 function UnitName() return 'Mychar' end
 WorldChatFilterDB={}
-local base='WorldChatFilter/'
+local base=''
 dofile(base..'Core.lua');dofile(base..'Classifier.lua')
 WorldChatFilter.Initialize()
 local ads = {

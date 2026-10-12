@@ -11,7 +11,7 @@ function CreateFrame() return {RegisterEvent=function() end,SetScript=function()
 WorldChatFilterDB = {enabled=true,filterGuild=true,filterLFG=true,
   filterServices=true,filterTrade=true,filterRepeats=true,sensitivity='balanced'}
 for _,file in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do
-  dofile('WorldChatFilter/'..file)
+  dofile(''..file)
 end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter

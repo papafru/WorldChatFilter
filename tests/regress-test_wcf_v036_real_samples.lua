@@ -4,7 +4,7 @@ DEFAULT_CHAT_FRAME={AddMessage=function() end}
 function CreateFrame() return {RegisterEvent=function() end,SetScript=function() end} end
 function ChatFrame_OnEvent() end
 WorldChatFilterDB = {sensitivity='balanced'}
-local base='WorldChatFilter/'
+local base=''
 dofile(base..'Core.lua');dofile(base..'Classifier.lua');WorldChatFilter.Initialize()
 local samples={
  {"|cffefca7fBS LFW - does you soul stir with desire? |cffa335ee|Hitem:16905:0:0:0|h[Bloodsoul Gauntlets]|h|r|cffa335ee|Hitem:17502:0:0:0|h[Darksoul Shoulders]|h|r /w me",'Services'},

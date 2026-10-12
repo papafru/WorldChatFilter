@@ -7,7 +7,7 @@ function GetTime() return 10 end
 local delivered=0
 function ChatFrame_OnEvent() delivered=delivered+1 end
 WorldChatFilterDB={sensitivity='balanced'}
-local path='WorldChatFilter/'
+local path=''
 for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile(path..f) end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter

@@ -47,7 +47,7 @@ ColorPickerFrame = {
   Hide=function(self) self.visible=false end,
   Show=function(self) self.visible=true end,
 }
-local root='WorldChatFilter/'
+local root=''
 WorldChatFilterDB = {enabled=true, tintWorld=true, sensitivity='balanced', minimapAngle=235}
 for _,file in ipairs({'Core.lua','Color.lua','Statistics.lua','Classifier.lua','Filter.lua','UI.lua'}) do
   assert(loadfile(root..file), 'Lua parse '..file)
