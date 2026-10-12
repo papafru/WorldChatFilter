@@ -1,8 +1,16 @@
 # Changelog
 
-## 1.0.0 — 2026-10-12
+## 0.3.23 — Beta (2026-10-12)
 
-First public release, based on the in-game-tested **v0.3.22 beta** branch.
+- Recognize short `LF + dungeon` ads, including Scarlet Graveyard variants.
+- Recognize numbered group needs such as `need 1 heal for ...` with unknown destinations.
+- Recognize compact role compositions like `DEADMINES HEAL 2DPS`.
+- Add regression tests for these patterns, ordinary chat and World/Trade isolation.
+- Keep the color picker, statistics and other features unchanged.
+
+## 1.0.0 — Draft (not yet released)
+
+Planned public release. Documentation was initially prepared from the **v0.3.22 beta**; the latest beta is **v0.3.23**.
 
 - World-only contextual detection for trade, group finding, guild recruitment, professions/services, summon/taxi listings, and repeat spam.
 - Expanded short-hand LFG detection (e.g., `LF7M`, `LF 1M`, `LF1Healer`, `LF 2 DPS`, and class variants).

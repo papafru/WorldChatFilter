@@ -1,4 +1,6 @@
-# World Chat Filter v1.0.0
+# World Chat Filter v1.0.0 — DRAFT
+
+> This release has **not yet been published**. The current repository source is v0.3.23 beta.
 
 **Keep the conversation. Filter the noise.**
 

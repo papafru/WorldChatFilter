@@ -1,5 +1,7 @@
 # World Chat Filter
 
+> **Current source: v0.3.23 beta.** This branch includes the latest implicit-LFG fixes. The public v1.0.0 Release has not been published yet.
+
 **Keep the conversation. Filter the noise.**
 
 **World Chat Filter** is a lightweight, rule-based chat addon for Vanilla-style World of Warcraft. It filters unwanted advertisements from the **`World` channel**, leaving room for normal conversations.
@@ -28,7 +30,7 @@
 
 ## Installation
 
-1. Download **`WorldChatFilter-v1.0.0.zip`** from the GitHub **Releases** page when available. Do not use GitHub's automatically generated source archive for a normal install.
+1. **For this beta**, use **Code → Download ZIP** on GitHub, extract it, and locate the nested `WorldChatFilter/` addon directory. Once an official release exists, download the dedicated addon ZIP from GitHub Releases instead.
 2. Close WoW and extract the ZIP.
 3. Copy the **`WorldChatFilter`** directory into `World of Warcraft/Interface/AddOns/`.
 4. Make sure this file exists: `Interface/AddOns/WorldChatFilter/WorldChatFilter.toc` (no extra nesting).

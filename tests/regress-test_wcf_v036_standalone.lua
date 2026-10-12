@@ -66,7 +66,7 @@ dofile(base..'Filter.lua')
 dofile(base..'UI.lua')
 local WCF=WorldChatFilter
 WCF.Initialize(); WCF.BuildUI()
-assert(WCF.VERSION=='0.3.22')
+assert(WCF.VERSION=='0.3.23')
 assert(WorldChatFilterDB==prevDB)
 assert(WCF.db.sensitivity=='aggressive')
 assert(WCF.db.minimapAngle==117)

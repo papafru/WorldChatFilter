@@ -106,7 +106,13 @@ local roles = {"dps","dd","dds","tank","tanks","heal","heals","healer","healers"
 local dungeons = {"sfk","bm","brd","lbrs","ubrs","brs","strat","stratholme","scholo", "scholomance",
  "mara","maraudon","zf","zg","dm","dire","maul","sm","rfc","wc","rfk","rfd","stockades",
  "deadmines","gnomer","gnomeregan","ulda","uldaman","st","bfd","sunken","temple","mc",
+  "scarlet","graveyard","gy",
  "ony","onyxia","bwl","aq","aq20","aq40","naxx","k10","kara","karazhan"}
+-- A dungeon at the start of a short message can introduce a compact roster
+-- listing (e.g. "DEADMINES HEAL 2DPS"). Names by themselves never cause blocks.
+local dungeonLeadTokens = {}
+for i = 1, table.getn(dungeons) do dungeonLeadTokens[dungeons[i]] = true end
+
 local activities = {"rep","reputation","farm","farming","run","runs","group","grp","party", "dungeon", "instance",
  "raid","raids","speedrun","speedruns","attunement","questing","elite","quest","quests","pvp","arena"}
 local professions = {"enchanter","enchanting","enchants","enchant","alchemist","alchemy","blacksmith",
@@ -217,6 +223,16 @@ local function lfg(text, lower, message)
       countGroupSearch(text, countedLfPattern)
   local countedLookingRoleOrClass = string.find(text, " looking for", 1, true) and
       countGroupSearch(text, countedLookingPattern)
+  -- Additional group-ad layouts: "need 1 heal for Windhorn" and
+  -- "Deadmines heal 2DPS". A role count only contributes in a group context.
+  local countedNeedRoleOrClass = string.find(text, "^ need ") and
+      countGroupSearch(text, " need%s*(%d+)%s*([%a]+) ")
+  local _, _, leadingToken = string.find(text, "^ ([%w]+) ")
+  local startsDungeon = leadingToken and dungeonLeadTokens[leadingToken]
+  -- Only scan for a bare counted role when a dungeon heads the message;
+  -- otherwise ordinary World chit-chat would pay for an unnecessary scan.
+  local standaloneCountedRole = startsDungeon and
+      countGroupSearch(text, " (%d+)%s*([%a]+) ")
   -- LFM<number> (e.g. LFM1, LFM7, LFM12) and LFM<number>M are
   -- distinct from LF<number>M.  Lua 5.0 patterns, whole-token only.
   local lfmSlots = string.find(text, " lfm%d+m? ") ~= nil
@@ -265,6 +281,29 @@ local function lfg(text, lower, message)
         "the advertisement says", "the ad says", "i wonder"})
   local scheduledRoleDemand = playerDemand and (role or playerClass) and
       organizedGroup and scheduleContext and not demandDiscussion
+  local plainDiscussion = string.find(message, "?", 1, true) or
+      somePhrase(text, {"what does", "what is", "meaning of", "the phrase",
+        "i heard", "someone said", "i ran", "i did", "we ran", "we did",
+        "last night", "yesterday", "is this", "was it", "how do"})
+  -- A destination follows a leading "LF" (e.g. LF Scarlet Graveyard),
+  -- even if the sender omits LFG/LFM, dungeon initials or group counts.
+  local leadingLfDungeon = prefixed and lf and dungeon and not plainDiscussion and
+      not somePhrase(text, {"lf some advice", "lf advice", "lf tips",
+        "lf some tips", "lf help with", "lf a name", "lf a cool",
+        "looking for advice", "looking for tips"})
+  -- A short leading NEED + number + role/class is a group-slot request.
+  -- Guard against everyday need-a-potion or need-a-spell conversations.
+  local needCountDiscussion = plainDiscussion or
+      somePhrase(text, {"potion", "potions", "spell", "spells", "for my",
+        "for your", "for this ability", "for this skill", "for my build"})
+  local needRoleListing = countedNeedRoleOrClass and not needCountDiscussion and
+      (dungeon or activity or contains(text, "for") or
+       string.find(text, " %d+%s*[%a]+ $"))
+  -- "DEADMINES HEAL 2DPS" has no recruitment verb. Interpret it as a
+  -- group composition listing only when a dungeon LEADS the message and
+  -- both a counted role/class and another ordinary role are present.
+  local compactRosterListing = startsDungeon and standaloneCountedRole and
+      role and not plainDiscussion
   -- Require group formation semantics, not just dungeon names and class words.
   -- A standalone LF<number>M in a sentence about the shorthand is not an ad.
   -- When it does not lead the sentence, require group context before blocking.
@@ -282,7 +321,8 @@ local function lfg(text, lower, message)
       "people say", "can someone explain"})
   if (countedLfRoleOrClass or countedLookingRoleOrClass) and
       (slotDiscussion or formatDiscussion) then return r end
-  r.intent = scheduledRoleDemand or
+  r.intent = scheduledRoleDemand or leadingLfDungeon or
+      needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
     (explicit and (not (hasLfSlots or lfmSlots) or slotIntent)) or
     (lf and (role or dungeon or activity or (prefixed and playerClass))) or
@@ -290,6 +330,9 @@ local function lfg(text, lower, message)
     (need and role and (dungeon or activity or typeCount >= 2 or summoning)) or
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
+  if leadingLfDungeon then add(r, 5, "direct LF + dungeon destination") end
+  if needRoleListing then add(r, 10, "numbered need for role/class") end
+  if compactRosterListing then add(r, 10, "compact dungeon group roster") end
   if scheduledRoleDemand then
     add(r, 9, "scheduled group seeking roles/classes")
     add(r, 2, "organized raid/PUG/run")
