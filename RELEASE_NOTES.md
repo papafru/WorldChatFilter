@@ -1,6 +1,6 @@
 # World Chat Filter v1.0.0
 
-Initial public release, based on the verified v0.3.23 classifier and 19 regression test files.
+Initial public release, now with post-release classifier bugfixes in the downloadable ZIP. The current `main` branch contains 22 regression tests; the original `v1.0.0` source tag is intentionally unchanged.
 
 **Keep the conversation. Filter the noise.**
 
@@ -17,6 +17,6 @@ A lightweight, standalone World-chat spam filter for Vanilla-style WoW clients (
 
 ### Installation
 
-Download **`WorldChatFilter-v1.0.0.zip`** from the release assets and extract the `WorldChatFilter` folder into `Interface/AddOns/`. Type `/wcf` to open settings. Existing SavedVariables are preserved when upgrading.
+Download **[WorldChatFilter-v1.0.0-Bugfix.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.0.0/WorldChatFilter-v1.0.0-Bugfix.zip)** from the release assets and extract the `WorldChatFilter` folder into `Interface/AddOns/`. Type `/wcf` to open settings. Existing SavedVariables are preserved when upgrading. Do **not** use the auto-generated **Source code (ZIP)**, which still reflects the original release tag.
 
 **Note:** False positives and undetected ads are still possible; please file reports with sanitized examples. Real in-game screenshots are included in the README.
