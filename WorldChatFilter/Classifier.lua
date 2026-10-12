@@ -1,0 +1,916 @@
+-- WorldChatFilter contextual World-ad classifier, Vanilla Lua 5.0 compatible.
+-- Original scoring/lexicons curated for WorldChatFilter; not copied from other addons.
+-- Words are whole-token matched, except the explicit foreign-language stems.
+local WCF = WorldChatFilter
+
+local function stripMarkup(message)
+  local s = tostring(message or "")
+  s = string.gsub(s, "|c%x%x%x%x%x%x%x%x", "")
+  s = string.gsub(s, "|r", "")
+  s = string.gsub(s, "|H[^|]*|h", "")
+  s = string.gsub(s, "|h", "")
+  return s
+end
+
+-- Optional UTF-8 Latin accents folding, because Vanilla Lua's string.lower
+-- is ASCII-only. Keep Cyrillic untouched for lowerLanguages() below.
+-- Map only Latin letters; avoid destroying Czech/Slovak word boundaries.
+local latinAccents = {
+  {"á","a"},{"Á","a"},{"ä","a"},{"Ä","a"},{"à","a"},{"À","a"},
+  {"â","a"},{"Â","a"},{"ã","a"},{"Ã","a"},{"ą","a"},{"Ą","a"},
+  {"č","c"},{"Č","c"},{"ć","c"},{"Ć","c"},{"ç","c"},{"Ç","c"},
+  {"ď","d"},{"Ď","d"},{"đ","d"},{"Đ","d"},
+  {"é","e"},{"É","e"},{"ě","e"},{"Ě","e"},{"ë","e"},{"Ë","e"},
+  {"ę","e"},{"Ę","e"},{"è","e"},{"È","e"},{"ê","e"},{"Ê","e"},
+  {"í","i"},{"Í","i"},{"ï","i"},{"Ï","i"},{"î","i"},{"Î","i"},
+  {"ĺ","l"},{"Ĺ","l"},{"ľ","l"},{"Ľ","l"},{"ł","l"},{"Ł","l"},
+  {"ň","n"},{"Ň","n"},{"ń","n"},{"Ń","n"},{"ñ","n"},{"Ñ","n"},
+  {"ó","o"},{"Ó","o"},{"ô","o"},{"Ô","o"},{"ö","o"},{"Ö","o"},
+  {"ő","o"},{"Ő","o"},{"ò","o"},{"Ò","o"},{"õ","o"},{"Õ","o"},
+  {"ř","r"},{"Ř","r"},{"ŕ","r"},{"Ŕ","r"},
+  {"š","s"},{"Š","s"},{"ś","s"},{"Ś","s"},{"ş","s"},{"Ş","s"},
+  {"ť","t"},{"Ť","t"},{"ţ","t"},{"Ţ","t"},
+  {"ú","u"},{"Ú","u"},{"ů","u"},{"Ů","u"},{"ü","u"},{"Ü","u"},
+  {"ű","u"},{"Ű","u"},{"ù","u"},{"Ù","u"},{"û","u"},{"Û","u"},
+  {"ý","y"},{"Ý","y"},{"ÿ","y"},{"Ÿ","y"},
+  {"ž","z"},{"Ž","z"},{"ź","z"},{"Ź","z"},{"ż","z"},{"Ż","z"},
+}
+local function normalize(raw)
+  local s = raw
+  -- Latin accents begin with C3, C4 or C5 in our explicit fold table.
+  -- Cyrillic (D0/D1) and arbitrary UTF-8 links must not trigger 80+ gsubs.
+  if string.find(s, "[\195-\197]") then
+    local i
+    for i = 1, table.getn(latinAccents) do
+      s = string.gsub(s, latinAccents[i][1], latinAccents[i][2])
+    end
+  end
+  s = string.lower(s)
+  s = string.gsub(s, "[^%w]+", " ")
+  s = string.gsub(s, "%s+", " ")
+  return " " .. s .. " "
+end
+
+-- Lexicon entries never change: wrap each candidate only once rather than
+-- constructing " " .. word .. " " for every word match on every message.
+-- The cache is bounded by our fixed lexicon (not user/chat content).
+local wrappedTerms = {}
+local function contains(text, term)
+  local pattern = wrappedTerms[term]
+  if not pattern then
+    pattern = " " .. term .. " "
+    wrappedTerms[term] = pattern
+  end
+  return string.find(text, pattern, 1, true) ~= nil
+end
+local phrase = contains
+
+local function any(text, words)
+  local i
+  for i = 1, table.getn(words) do
+    if contains(text, words[i]) then return true end
+  end
+  return false
+end
+
+local function somePhrase(text, words)
+  local i
+  for i = 1, table.getn(words) do
+    if phrase(text, words[i]) then return true end
+  end
+  return false
+end
+
+-- Unicode-safe *selective* UTF-8 Russian folding for common ad stems.
+-- ASCII-only string.lower() does not fold UTF-8 Cyrillic in Vanilla.
+local function lowerLanguages(raw)
+  local s = string.lower(raw)
+  if not string.find(s, "[\208\209]") then return s end
+  local d0, d1 = string.char(208), string.char(209)
+  local upper1 = "[" .. string.char(144) .. "-" .. string.char(159) .. "]"
+  local upper2 = "[" .. string.char(160) .. "-" .. string.char(175) .. "]"
+  s = string.gsub(s, d0 .. "(" .. upper1 .. ")", function(v)
+    return d0 .. string.char(string.byte(v) + 32)
+  end)
+  s = string.gsub(s, d0 .. "(" .. upper2 .. ")", function(v)
+    return d1 .. string.char(string.byte(v) - 32)
+  end)
+  s = string.gsub(s, d0 .. string.char(129), d1 .. string.char(145))
+  return s
+end
+
+-- Curated activity/alias groups based on Vanilla/Turtle terminology.
+-- The names do NOT block messages on their own; they add evidence only
+-- after group-finding intent has been identified.
+local roles = {"dps","dd","dds","tank","tanks","heal","heals","healer","healers","healing"}
+local dungeons = {"sfk","bm","brd","lbrs","ubrs","brs","strat","stratholme","scholo", "scholomance",
+ "mara","maraudon","zf","zg","dm","dire","maul","sm","rfc","wc","rfk","rfd","stockades",
+ "deadmines","gnomer","gnomeregan","ulda","uldaman","st","bfd","sunken","temple","mc",
+ "ony","onyxia","bwl","aq","aq20","aq40","naxx","k10","kara","karazhan"}
+local activities = {"rep","reputation","farm","farming","run","runs","group","grp","party", "dungeon", "instance",
+ "raid","raids","speedrun","speedruns","attunement","questing","elite","quest","quests","pvp","arena"}
+local professions = {"enchanter","enchanting","enchants","enchant","alchemist","alchemy","blacksmith",
+ "blacksmithing","tailor","tailoring","leatherworker","leatherworking","engineer","engineering",
+ "crafter","crafting","inscription","transmute","transmutes","crusader","arcanite","flask","flasks"}
+local merchandise = {"gold","g","mats","materials","herbs","herb","ore","ores","item","items","boe","epic",
+ "recipe","recipes","mount","mounts","stack","stacks","enchants","enchant","cloth","potions","potion"}
+local services = {"boost","boosts","boosting","carry","carries","carrying","summon","summons","summoning",
+ "portal","portals","transport","powerlevel","powerleveling","powerlevelling","crafting","enchanting"}
+local contact = {"pst","whisper","whisp","pm","wisp","message","dm","/w"}
+local recruit = {"recruiting","recruitment","recruits","applicants",
+ "rekrutiert","rekrutieren","rekrutierung","recrute","recrutement","recluta","reclutando"}
+local guildNouns = {"guild","guilds","gilde","gilden","guilde","gildia","static","roster"}
+-- Class names are *context*, never an advertisement by themselves. Include plural
+-- recruitment listings ("Mages/Shamans/Warlocks") and Vanilla class nicknames.
+-- Static raid weekday vocabulary: avoid allocating a table per chat line.
+local raidWeekdays = {"monday","tuesday","wednesday","thursday","friday",
+  "saturday","sunday","mondays","tuesdays","wednesdays","thursdays",
+  "fridays","saturdays","sundays"}
+
+local playerClasses = {"mage","mages","shaman","shamans","warlock","warlocks",
+  "lock","locks","druid","druids","priest","priests","spriest",
+  "warrior","warriors","hunter","hunters","rogue","rogues","paladin","paladins",
+  "boomkin","boomkins","feral","ferals","resto","shadowpriest","shadowpriests"}
+
+-- All supported group roles/classes as a bounded static lookup. A class word
+-- alone is NEVER a reason to block; the sender must express group-search intent.
+local groupTypes = {}
+local i
+for i = 1, table.getn(roles) do groupTypes[roles[i]] = true end
+for i = 1, table.getn(playerClasses) do groupTypes[playerClasses[i]] = true end
+-- Supports e.g. "LF 1 Holy Priest" without treating a spec alone as a request.
+local groupSpecs = {holy=true, shadow=true, discipline=true, disc=true,
+  protection=true, prot=true, restoration=true, resto=true,
+  elemental=true, enhancement=true, enh=true, fury=true, arms=true,
+  retribution=true, ret=true, balance=true, feral=true}
+
+-- Detect "LF 1Healer", "LF1Mage", "LF 2 DPS", "LF 1 Rogue" and
+-- "Looking for 2 Shamans". Lua 5.0 patterns; tokens must be whole words.
+-- Do not enumerate specific class/count combinations in the classifier.
+local countedLfPattern = " lf%s*(%d+)%s*([%a]+) "
+local countedLookingPattern = " looking for%s*(%d+)%s*([%a]+) "
+local function countGroupSearch(text, pattern)
+  local at = 1
+  while true do
+    local from, finish, count, noun = string.find(text, pattern, at)
+    if not from then return false end
+    if groupTypes[noun] and tonumber(count) and tonumber(count) > 0 then
+      return true
+    end
+    if groupSpecs[noun] and tonumber(count) and tonumber(count) > 0 then
+      local _, _, nextWord = string.find(string.sub(text, finish + 1), "^(%a+) ")
+      if nextWord and groupTypes[nextWord] then return true end
+    end
+    at = finish + 1
+  end
+end
+
+-- Reuse this static list instead of allocating a new table for every
+-- summoning-directory advertisement (especially important on busy channels).
+local summonDestinations = {"booty bay", "blackrock mountain", "blackfathom deeps",
+ "dire maul", "gadgetzan", "ironforge", "maraudon", "hillsbrad",
+ "hinterlands", "stormwind", "orgrimmar", "undercity", "thunder bluff",
+ "eastern plaguelands", "dragonmaw", "tanaris", "silithus",
+ "ashenvale", "desolace", "winterspring", "felwood", "stranglethorn",
+ "hydraxian", "alach thalas", "alah thalas", "mc", "brd"}
+
+local function newResult(category)
+  -- Most chat messages do not advertise; allocate clue arrays only on hits.
+  return {category = category, score = 0, intent = false}
+end
+
+local function add(result, amount, why)
+  result.score = result.score + amount
+  if not result.clues then result.clues = {} end
+  table.insert(result.clues, why)
+end
+
+local function questionPenalty(text, message)
+  -- Distinguishes "What does LFG mean?" from an actual LFG ad.
+  if somePhrase(text, {"what does","what is","how do","how can","can anyone explain",
+                            "anyone know","does anyone know","is there","what are","why is","why do", "can someone explain"}) then return 6 end
+  if somePhrase(text, {"can i join","did our","is anyone","do you know","how many"}) then return 4 end
+  if somePhrase(text, {"lf some advice","lf advice","lf tips","lf a cool","looking for advice",
+        "looking for tips","lf some tips","lf a name","lf help with"}) then return 7 end
+  if somePhrase(text, {"someone in our guild","that guild is","someone said","i heard",
+        "was recruiting for","last night they"}) then return 5 end
+  if somePhrase(text, {"how much do", "how much does", "how much can"}) then return 12 end
+  if string.find(text, "^ does ") and contains(text, "mean") then return 10 end
+  if string.find(message, "?", 1, true) then return 2 end
+  return 0
+end
+
+local function lfg(text, lower, message)
+  local r = newResult("LFG")
+  -- Generic LF<number>M group shorthand (LF1M, LF7M, LF12M, etc.).
+  -- Normalization inserts spaces at word boundaries, so this detects whole
+  -- tokens only and never matches e.g. ALF7M, LF7MX or player names.
+  -- Intentionally use Lua 5.0 string patterns (no %f frontier syntax).
+  local lfSlots = string.find(text, " lf%d+m ") ~= nil
+  -- Both LF1M and LF 1M mean "looking for 1 more". Support LF 1 M
+  -- too, using whole-token boundaries to avoid matching unrelated words.
+  -- Numbers are intentionally unrestricted, as with LF<number>M.
+  local spacedLfSlots = string.find(text, " lf %d+%s*m ") ~= nil
+  local wordLfSlots = string.find(text, " lf %d+ more ") ~= nil
+  local hasLfSlots = lfSlots or spacedLfSlots or wordLfSlots
+  local countedLfRoleOrClass = string.find(text, " lf", 1, true) and
+      countGroupSearch(text, countedLfPattern)
+  local countedLookingRoleOrClass = string.find(text, " looking for", 1, true) and
+      countGroupSearch(text, countedLookingPattern)
+  -- LFM<number> (e.g. LFM1, LFM7, LFM12) and LFM<number>M are
+  -- distinct from LF<number>M.  Lua 5.0 patterns, whole-token only.
+  local lfmSlots = string.find(text, " lfm%d+m? ") ~= nil
+  local prefixed = string.find(text, "^ lf ") ~= nil or
+                   string.find(text, "^ lf%d+ ") ~= nil or
+                   string.find(text, "^ lf%d+m ") ~= nil or
+                   string.find(text, "^ lfm%d+m? ") ~= nil or
+                   string.find(text, "^ lfg ") ~= nil or
+                   string.find(text, "^ lfm ") ~= nil or
+                   string.find(text, "^ lfp ") ~= nil
+  local explicit = hasLfSlots or lfmSlots or any(text, {"lfg","lfm","lfp","lftank","lfhealer","lfdps","lfr"})
+  local lf = contains(text, "lf") or string.find(text, " lf%d+ ") ~= nil or hasLfSlots
+  local looking = somePhrase(text, {"looking for","searching for","looking 4"})
+  local need = any(text, {"need","needs","needing","needed","missing"})
+  local slots = somePhrase(text, {"last spot","last slot","one more","two more","spots open","slots open","fill group"})
+  local role = any(text, roles)
+  local playerClass = any(text, playerClasses)
+  local dungeon = any(text, dungeons)
+  local activity = any(text, activities)
+  local summoning = any(text, {"summon","summons","summoning","sum","summ"})
+  local typeCount = 0
+  if any(text, {"tank","tanks"}) then typeCount = typeCount + 1 end
+  if any(text, {"heal","heals","healer","healers","healing"}) then typeCount = typeCount + 1 end
+  if any(text, {"dps","dd","dds"}) then typeCount = typeCount + 1 end
+  -- Some scheduled PUG/raid ads do not use LF/LFM. A request for specific
+  -- classes/roles ("Mages in demand", "Priests needed") combined with an
+  -- organized group activity AND a schedule is still group recruitment.
+  -- Never key off the advertised guild/raid name.  Both organization and
+  -- an actual player-demand cue are required to avoid flagging WoW chat.
+  local playerDemand = somePhrase(text, {"in demand", "still need", "need more",
+      "looking for", "searching for", "seeking players"}) or
+      any(text, {"needed", "wanted", "required"})
+  local organizedGroup = any(text, {"pug", "pugs", "raid", "raids", "runs",
+      "run", "raiding", "group", "groups"}) or
+      somePhrase(text, {"raid team", "raid night", "raid nights"})
+  local datedGroup = any(text, raidWeekdays) or
+      any(text, {"tonight", "tomorrow", "weekend", "weekends", "weekly"}) or
+      somePhrase(text, {"raid schedule", "raid times", "server time"})
+  local clockTime = string.find(message, "%d%d?:%d%d") ~= nil
+  local scheduleContext = datedGroup or clockTime
+  -- Queries and reports about player demand are not recruiting posts.
+  local demandDiscussion = string.find(message, "?", 1, true) ~= nil or
+      somePhrase(text, {"i heard", "i read", "someone said", "they said",
+        "we discussed", "was discussing", "talking about", "last week",
+        "last night", "yesterday", "people say", "what does", "what is",
+        "the advertisement says", "the ad says", "i wonder"})
+  local scheduledRoleDemand = playerDemand and (role or playerClass) and
+      organizedGroup and scheduleContext and not demandDiscussion
+  -- Require group formation semantics, not just dungeon names and class words.
+  -- A standalone LF<number>M in a sentence about the shorthand is not an ad.
+  -- When it does not lead the sentence, require group context before blocking.
+  local slotDiscussion = somePhrase(text, {"what does", "what is", "what s",
+      "meaning of", "how do you", "can anyone explain", "someone said",
+      "i heard", "the term", "the phrase"}) and
+      any(text, {"mean", "means", "meaning", "shorthand", "abbreviation"})
+  local slotIntent = (hasLfSlots or lfmSlots) and not slotDiscussion and
+      (prefixed or role or dungeon or activity or need or slots or any(text, contact))
+  -- Discussion of an LF<number><class/role> shorthand must not trigger the
+  -- strong group-search shortcut, even on Aggressive.
+  local formatDiscussion = somePhrase(text, {"what does", "what is", "meaning of",
+      "the term", "the phrase", "the abbreviation", "how to use",
+      "how do you write", "someone said", "i heard", "people type",
+      "people say", "can someone explain"})
+  if (countedLfRoleOrClass or countedLookingRoleOrClass) and
+      (slotDiscussion or formatDiscussion) then return r end
+  r.intent = scheduledRoleDemand or
+      countedLfRoleOrClass or countedLookingRoleOrClass or
+    (explicit and (not (hasLfSlots or lfmSlots) or slotIntent)) or
+    (lf and (role or dungeon or activity or (prefixed and playerClass))) or
+    (looking and (role or contains(text, "group") or contains(text, "party"))) or
+    (need and role and (dungeon or activity or typeCount >= 2 or summoning)) or
+    (slots and (role or dungeon or activity))
+  if not r.intent then return r end
+  if scheduledRoleDemand then
+    add(r, 9, "scheduled group seeking roles/classes")
+    add(r, 2, "organized raid/PUG/run")
+    add(r, 2, "dated or timed event")
+  end
+  if countedLfRoleOrClass or countedLookingRoleOrClass then
+    add(r, 10, "numbered role/class group request")
+  end
+  if explicit then
+    local label = "LFG/LFM shorthand"
+    if hasLfSlots then label = "LF <number>M group shorthand" end
+    if lfmSlots then label = "LFM<number> group shorthand" end
+    add(r, 8, label)
+  end
+  if lf and not explicit then add(r, 4, "LF shorthand") end
+  if looking then add(r, 3, "looking-for intent") end
+  if need then add(r, 3, "role request") end
+  if slots then add(r, 4, "open group slots") end
+  if prefixed and not explicit then add(r, 1, "leading LF") end
+  if role then add(r, 3, "group role") end
+  if playerClass and not role then add(r, 3, "player class") end
+  if prefixed and lf and playerClass and not countedLfRoleOrClass then
+    add(r, 3, "direct LF class request")
+  end
+  if dungeon then add(r, 2, "dungeon/raid alias") end
+  if activity then add(r, 2, "group activity") end
+  if typeCount >= 2 then add(r, 2, "multiple group roles") end
+  if summoning then add(r, 1, "summon logistics") end
+  if any(text, contact) then add(r, 1, "contact cue") end
+  if string.find(text, " %d+ ") then add(r, 1, "slot count") end
+  return r
+end
+
+-- Guild recruitment is multilingual, and can be implicit ("community searching", "recluta",
+-- Latin-transliterated Russian). Combine recruitment language with raid/roster context;
+-- guild, Discord and raid names are NEVER sufficient by themselves.
+local function guild(text, lower, message)
+  local r = newResult("Guild")
+  -- Explicit denial of recruitment is discussion, not an advertisement.
+  if somePhrase(text, {"not recruiting", "not looking for recruits",
+      "not accepting applications", "we are not recruiting",
+      "aren t recruiting", "no recruitment"}) then return r end
+  local community = any(text, {"community","communities"})
+  local noun = any(text, guildNouns) or community or
+      string.find(lower, "гильд", 1, true) ~= nil
+  local roster = any(text, {"raiders","members","miembros","membros","igrokov","igroki", "players",
+      "roster","rosters","rooster","roosters","healers","healer","tank","tanks","dps"}) or
+      any(text, playerClasses)
+  -- "main rooster" is a very common misspelling of "main roster" in ads.
+  local team = any(text, {"team","teams","roster","rosters","rooster","roosters","static","statics"})
+  local raid = any(text, {"raid","raids","raiding","mc","ony","naxx","aq40","bwl","k10","kara","zg"})
+  local schedule = somePhrase(text, {"raid schedule","raid nights","raid times","raid timetable"}) or
+      any(text, {"schedule","horario"})
+  local discord = string.find(lower, "discord.gg/", 1, true) ~= nil or
+      string.find(lower, "discord.com/invite/", 1, true) ~= nil
+  local recruiting = any(text, recruit) or
+      any(text, {"nabiraet","nabiraem","nabira","nabirayut","nabor","naborom"}) or
+      string.find(lower, "набира", 1, true) ~= nil or
+      string.find(lower, "набор", 1, true) ~= nil or
+      string.find(lower, "рекрут", 1, true) ~= nil
+  -- Czech/Slovak guild promotion: translate wording into *signals*, not a
+  -- single blacklist phrase. Also recognizes accentless transliteration.
+  -- "hledame aktivni jedince" + "PVE/ONY/MC", for example, is recruitment.
+  local csSearch = any(text, {"hledame","hladame","shanime","nabirame",
+      "prijimame","prijmeme","pribereme","zhaname","nabor","nabira","nabereme","prijima"})
+  local csPeople = any(text, {"hrace","hracu","hracov","hraci","cleny", "clenu",
+      "clenov","clenove","jedince","lidicky","lidi","aktivni","novacky",
+      "veterany","posily","novych","novou","krev","spoluhrace"})
+  local csGameContext = raid or any(text, {"pve","pvp","raidovani","raidi",
+      "guild","gilda","gildy","guildy","gilde","cech","cechu","raidery","raideri","progress"})
+  local csInvitation = somePhrase(text, {"otevira brany","otevirame brany",
+      "otvira brany","otvirame brany","novou krev","nova krev",
+      "pridej se k nam","pridaj sa k nam","radi vitame",
+      "vitame nove","vitame novych","uvitame nove","uvitame novych","hledame nove cleny"})
+  local csStrongInvite = somePhrase(text, {"otevira brany","otevirame brany",
+      "otvira brany","otvirame brany","pridej se k nam","pridaj sa k nam",
+      "radi vitame","vitame nove","vitame novych","uvitame nove","uvitame novych"})
+  local csRecruitment =
+      (csSearch and csPeople and csGameContext) or
+      (csStrongInvite and csPeople and csGameContext) or
+      (csInvitation and csSearch and csPeople)
+  -- Swedish invitations: the guild advertisement may never say "recruiting".
+  -- Treat welcome-to-all-role language + guild and raid/promotional context
+  -- as an invitation, not the word "guild" alone.
+  local swInvite, swPromo, swRecruitment = false, false, false
+  if noun then
+    swInvite = somePhrase(text, {"alla roller ar valkomna", "alla ar valkomna",
+        "alla klasser ar valkomna", "vi soker", "soker spelare", "soker fler",
+        "vi rekryterar", "vi valkomnar", "vill du joina", "vill du raida",
+        "hor av dig", "valkommen till var guild"})
+    if swInvite then
+      swPromo = somePhrase(text, {"serverns basta", "svenska guild",
+          "raids pa farm", "vi raider", "vill du", "alla roller"})
+      if raid or swPromo or roster then
+        local swDiscussion = somePhrase(text, {"the guild says", "my guild says",
+            "our guild says", "their guild says", "guild said", "guild says",
+            "what does", "someone said", "i heard", "does anyone know",
+            "the phrase"})
+        swRecruitment = not swDiscussion
+      end
+    end
+  end
+  -- Latin-script Russian recruitment: common spellings vary (ishet/ishchet,
+  -- ishem/ischem, sobiraem/sobirayem, ...).  This is a COMBINATION rule,
+  -- not a blacklist of specific messages or guild names. Require a search
+  -- or team-assembly verb + people or team cues + WoW/guild context.
+  local ruSearch = any(text, {"ishet","ischet","ishchet","ishut","ischut",
+      "ishem","ischem","ishchem","ishim", "nabor",
+      "nabiraet","nabiraem","nabirayem","nabirayut","nabira",
+      "sobiraem","sobirayem","sobiraet","sobirayut"})
+  local ruPeople = any(text, {"igrok","igroki","igrokov","igrokam","igrokami",
+      "igrokovv","lyudey","lyudei","ludey","ludi","uchastnikov",
+      "raiderov","raidery","rebyat","rebyata"})
+  local ruTeam = any(text, {"core","statik","statica","kostyak","sostav",
+      "statiku","static"})
+  local ruContext = noun or raid or team or
+      any(text, {"lvl","lvls","level","levels","pve","pvp","progress"})
+  local ruDiscussion = somePhrase(text, {"what does", "what is", "what means",
+      "can someone translate", "can you translate", "how do you say",
+      "what s the meaning", "what is the meaning", "someone said",
+      "i heard", "someone in our guild", "is this russian"})
+  local ruRecruitment = not ruDiscussion and
+      ((ruSearch and ruPeople and ruContext) or
+       (ruSearch and ruTeam and (noun or raid or any(text, {"pve","pvp"}))))
+  local welcome = any(text, {"welcome","willkommen","bienvenidos"})
+  -- Direct contact + promotional audience language can be guild recruitment
+  -- even without saying "guild" (e.g. "great place for returning players" / "whisper for invite").
+  -- We require MULTIPLE cues to avoid classifying ordinary guild discussions.
+  local guildCallToAction = somePhrase(text, {"whisper for invite","whisper for an invite",
+      "whisper for invites","pst for invite","pm for invite","message for invite",
+      "whisper for an invitation","whisper to join","whisper to get invited"})
+  local communityPitch = somePhrase(text, {"great place for","a place for returning",
+      "place for returning","home for returning","welcoming new players",
+      "welcomes new players","new to octowow","new to turtle wow",
+      "first time raiders","returning gamers","returning players",
+      "new players welcome","find your flock","find your home","find a home",
+      "all levels welcome"})
+  local targetAudience = roster or any(text, {"returning","newcomers","newbies",
+      "gamers","leveling","levelling","beginners","veterans","casuals"})
+  local softRecruitment = guildCallToAction and communityPitch and targetAudience
+  -- A guild may invite *regional/language-specific* players without mentioning
+  -- raid roster or a schedule ("Guild ... looking for RU speaking players for PvP").
+  -- Requiring roster/schedule previously let these clear adverts through.
+  -- Require all three independent signals: guild identity, explicit search for
+  -- members, and a promotional WoW community/activity pitch. A report or a
+  -- question about another guild is not a recruitment advertisement.
+  local memberSeeking = (any(text, {"searching", "seeking"}) or
+      somePhrase(text, {"looking for", "looking 4", "searching for"})) and
+      (roster or somePhrase(text, {"new members", "active members", "more members"}))
+  local communityBenefits = any(text, {"pvp", "pve", "active", "online", "chill",
+      "friendly", "casual", "hardcore", "events", "dungeons", "raids"}) or
+      somePhrase(text, {"on farm", "every evening", "every night",
+          "no rush", "positive vibe", "all content", "full content", "daily events"})
+  local nonPromotionalQuestion = string.find(message, "?", 1, true) and
+      not any(text, contact) and
+      not any(text, {"wispate", "whispate", "whisperate", "scrivetemi"}) and
+      not somePhrase(text, {"join us", "join our", "apply now", "for more info", "in privato"})
+  local advertisementDiscussion = nonPromotionalQuestion or somePhrase(text, {
+      "what does", "what is", "why is", "how do", "how can", "do you think",
+      "i heard", "i read", "i saw", "someone said", "yesterday", "last night",
+      "how can i", "is it normal", "any tips", "any advice", "what should",
+      "the guild says", "their guild says", "someone in our guild",
+      "the ad says", "the advertisement says", "the phrase"})
+  local guildCommunityRecruitment = noun and memberSeeking and
+      communityBenefits and not advertisementDiscussion
+  -- Italian guild ads commonly use "reclutamenti" / "reclutiamo" instead of
+  -- the English 'recruiting'. Detect the recruitment + member/community +
+  -- contact *combination*, never the guild's name or an isolated Italian word.
+  local italianRecruiting = any(text, {"reclutamenti", "reclutamento",
+      "reclutiamo", "reclutano", "recluta", "reclutare", "reclutando",
+      "cerchiamo", "cercasi"})
+  local italianGroupContext = any(text, {"gilda", "gilde", "gruppo", "gruppi",
+      "giocatori", "membri", "raider", "raiders", "team", "raid"}) or
+      somePhrase(text, {"gruppo amichevole", "nuovi membri", "nuovi giocatori"})
+  local italianContact = any(text, {"wispate", "whispate", "whisperate",
+      "scrivetemi", "contattatemi", "contattateci", "whisper"}) or
+      somePhrase(text, {"in privato", "scrivete in privato", "mandate un messaggio",
+          "mandate un whisper", "unitevi a noi", "unisciti a noi", "vi aspettiamo"})
+  local italianInvitation = somePhrase(text, {"in cerca di", "siamo alla ricerca",
+      "apre i reclutamenti", "apriamo i reclutamenti", "cerchiamo giocatori",
+      "cerchiamo membri", "cerca nuovi membri"})
+  local italianDiscussion = advertisementDiscussion or
+      somePhrase(text, {"cosa significa", "che significa", "sapete se",
+          "ho sentito", "ho letto", "mi hanno detto", "non reclutiamo",
+          "non cerchiamo", "non stiamo reclutando", "non sta reclutando",
+          "reclutamenti chiusi", "ieri parlavo", "cosa sono i reclutamenti"})
+  local italianGuildRecruitment = italianRecruiting and italianGroupContext and
+      (italianContact or italianInvitation) and not italianDiscussion
+  local invite = any(text, {"inviting","invite","invites","suchen","sucht","mitglieder","buscamos"}) or
+      somePhrase(text, {"join us","join our","be part of","apply now","members wanted","spots open",
+        "looking for new recruits","looking for recruits","recruits wanted","wanted recruits",
+        "looking for members","looking for new members","seeking members","interested in adding"}) or
+      string.find(lower, "приглаша", 1, true) ~= nil or
+      string.find(lower, "ищем", 1, true) ~= nil or
+      string.find(lower, "вступай", 1, true) ~= nil or
+      string.find(lower, "принима", 1, true) ~= nil
+  -- Some ongoing raid communities never use the word "guild": they advertise
+  -- for players alongside RECURRING raid times and progression/roster details.
+  -- This is NOT a blacklist of names, raid abbreviations, or raw "looking for".
+  local openRoster = somePhrase(text, {"looking for players", "looking for more players",
+      "looking for active players", "searching for players", "seeking players",
+      "looking for raiders", "seeking raiders"})
+  local recurringRaids = any(text, {"weekends", "weekly", "mondays", "tuesdays",
+      "wednesdays", "thursdays", "fridays", "saturdays", "sundays"}) or
+      somePhrase(text, {"every weekend", "each weekend", "every week",
+         "raid nights", "raid schedule", "raiding schedule", "raids per week"})
+  local progression = any(text, {"clears", "progression", "speedruns", "speedrun"}) or
+      somePhrase(text, {"on farm", "farm status", "full clears", "mc clears"})
+  local rosterStructure = string.find(text, " %d+ raids ") ~= nil or
+      string.find(text, " %d+ man raids ") ~= nil or
+      somePhrase(text, {"our raid teams", "our raid groups", "raid roster"})
+  local rosterDiscussion = somePhrase(text, {"i read", "i saw", "someone said",
+      "i heard", "what does", "what is", "why do", "can anyone explain",
+      "the advertisement says", "the ad says"})
+  local ongoingRaidRecruitment = openRoster and raid and not rosterDiscussion and
+      ((recurringRaids and (progression or rosterStructure)) or
+       (progression and rosterStructure) or
+       (rosterStructure and team))
+  -- Recruitment of named classes for a *recurring raid roster*. Require
+  -- independent signals (player search + class, raid + weekly scheduling,
+  -- organization/progression, and an invitation to contact the recruiter).
+  -- Neither a guild name nor a mere reference to a guild is sufficient.
+  local classSearch = (somePhrase(text, {"looking for", "looking 4"}) or
+      any(text, {"searching", "seeking"})) and any(text, playerClasses)
+  local dayCount = 0
+  if classSearch and raid then
+    local i
+    for i=1,table.getn(raidWeekdays) do
+      if contains(text,raidWeekdays[i]) then dayCount = dayCount+1 end
+    end
+  end
+  local organizedRaids = any(text, {"prog","progress","progression","weekly","roster","team", "teams"}) or
+       somePhrase(text, {"raid schedule","raid nights","every week","raids per week"})
+  local recruitmentContact = any(text, contact) or discord or
+       somePhrase(text, {"message me", "contact me", "apply now", "get in touch"})
+  local scheduledClassRecruitment = classSearch and raid and
+      (dayCount >= 2 or (dayCount >= 1 and organizedRaids)) and
+      organizedRaids and recruitmentContact and not rosterDiscussion
+  -- Emerging guilds often describe their *intention to form* a long-term
+  -- raid team instead of saying "recruiting" or "looking for players".
+  -- Require multiple independent signals: guild/community context, a team-
+  -- formation phrase, and organized raiding context. Reject obvious reports,
+  -- quotes, or requests for advice rather than recruitment offers.
+  -- This recognizes families of adverts, not particular guild names.
+  local formingRaidTeam = noun and team and raid and
+      somePhrase(text, {"looking to build", "looking to form", "seeking to build",
+          "seeking to form", "looking to assemble", "building a raid team",
+          "forming a raid team", "building our raid team",
+          "forming our raid team", "building a raiding team"})
+  local formationDiscussion = somePhrase(text, {
+      "what does", "what is", "how do", "how can", "any advice",
+      "looking for advice", "asking for advice", "do you think",
+      "someone said", "i heard", "i read", "i saw", "the ad says",
+      "the advertisement says", "the guild says", "their guild says",
+      "our guild was", "my guild was", "used to", "yesterday"})
+  local guildFormationRecruitment = formingRaidTeam and not formationDiscussion and
+      (schedule or any(text, contact) or
+       somePhrase(text, {"for more info", "for more information",
+           "raid nights", "raid times", "weekly raids", "raiding schedule"}) or
+       (any(text, {"new", "fresh", "progression", "prog"}) and
+          somePhrase(text, {"our raid team", "close knit raid team", "raid roster"})))
+  local headline = somePhrase(text, {"looking for new recruits","looking for recruits","wanted recruits",
+      "recruits wanted","looking for members","looking for new members","seeking members","interested in adding"})
+  local promo = somePhrase(text, {"our guild","join our","join us","our team","our roster",
+      "recruits based","looking for new","members wanted","now recruiting","currently recruiting",
+      "we are recruiting","we re recruiting","wir sind","community gilde"})
+  local searching = any(text, {"searching","seeking"}) or
+      somePhrase(text, {"looking for","looking 4"})
+  -- Searching alone is common conversation; demand a strong team/roster/raid context.
+  -- Guild adverts often say "guilds, now looking for Mages/Shamans/Warlocks"
+  -- without literally saying "recruiting". A guild/community + search intent
+  -- + player/class needs + recruitment context must all be present.
+  local searchingForGroup = searching and noun and roster and
+      (team or raid or schedule or discord or
+        somePhrase(text, {"now looking for", "currently looking for", "looking for raiders"}))
+  local recruitingContext = roster or team or raid or schedule or discord or promo or
+      any(text, {"wanted","looking","seeking","based","new","recruits"})
+  r.intent = headline or
+      (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
+      (recruiting and recruitingContext) or (invite and noun and promo) or
+      csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
+      guildCommunityRecruitment or italianGuildRecruitment or
+      ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment
+  if not r.intent then return r end
+  if guildCommunityRecruitment then
+    add(r, 8, "guild advertising for players with community/activity pitch")
+    add(r, 3, "explicit member search")
+    add(r, 2, "promotional community/activity context")
+  end
+  if italianGuildRecruitment then
+    add(r, 8, "Italian member recruitment")
+    add(r, 3, "guild/community recruitment context")
+    if italianContact then add(r, 2, "direct contact invitation") end
+  end
+  if guildFormationRecruitment then
+    add(r, 8, "guild formation/long-term raid team recruitment")
+    if schedule then add(r, 2, "organized raid schedule") end
+    if somePhrase(text, {"for more info", "for more information"}) then
+      add(r, 2, "recruitment contact call-to-action")
+    end
+  end
+  if ongoingRaidRecruitment then
+    add(r, 7, "ongoing raid roster seeking players")
+    if recurringRaids then add(r, 2, "recurring raid schedule") end
+    if progression then add(r, 2, "raid progression/performance") end
+    if rosterStructure then add(r, 2, "roster/raid structure") end
+  end
+  if scheduledClassRecruitment then
+    add(r, 8, "scheduled raid roster seeking specific classes")
+    add(r, 2, "recurring raid day(s) + organized progression")
+    add(r, 2, "recruiter contact invitation")
+  end
+  if softRecruitment then
+    add(r, 5, "guild-style invitation call-to-action")
+    add(r, 4, "promotional community language")
+    add(r, 2, "recruitment target audience")
+  end
+  if ruRecruitment then
+    add(r, 5, "Russian-transliterated recruitment/assembly intent")
+    if ruPeople then add(r, 3, "player/member search") end
+    if ruTeam then add(r, 2, "team/core assembly") end
+    if ruContext then add(r, 2, "guild/raid/level context") end
+  end
+  if swRecruitment then
+    add(r, 5, "Swedish invitation/recruitment")
+    if swPromo then add(r, 3, "Swedish promotional context") end
+  end
+  if csRecruitment then
+    if csSearch then add(r, 4, "Czech/Slovak recruitment intent") end
+    if csPeople then add(r, 2, "Czech/Slovak member search") end
+    if csInvitation then add(r, 4, "Czech/Slovak invitation phrase") end
+    if csGameContext then add(r, 3, "Czech/Slovak WoW context") end
+  end
+  if noun then add(r, 3, "guild/community context") end
+  if recruiting then add(r, 5, "recruitment language") end
+  if invite then add(r, 4, "invitation language") end
+  if searchingForGroup then add(r, 4, "guild roster/class search") end
+  if welcome then add(r, 2, "welcome/invite cue") end
+  if headline then add(r, 5, "recruitment phrase") end
+  if promo then add(r, 2, "promotional phrasing") end
+  if roster then add(r, 2, "member/class roster") end
+  if team then add(r, 1, "team roster") end
+  if raid then add(r, 1, "raid schedule or progress") end
+  if schedule then add(r, 2, "schedule information") end
+  if discord then add(r, 2, "Discord invitation link") end
+  if any(text, contact) then add(r, 1, "contact cue") end
+  if somePhrase(text, {"feeling lonely","are you lonely"}) then add(r, 2, "invitation opener") end
+  return r
+end
+
+local function trade(text, lower, message)
+  local r = newResult("Trade")
+  local shorthand = any(text, {"wts","wtb","wtt","wtbts","wtsg","wtbg"})
+  local buySell = any(text, {"selling","buying","trading","sell","buy","trade","auctioning"})
+  local goods = any(text, merchandise)
+  local price = string.find(text, " %d+g ") or string.find(text, " %d+ gold ") or
+                somePhrase(text, {"for gold","per stack","each stack","cheap price"})
+  -- Direct seller headline: "SELLING FISH [Stonescale Eel]..." is clearly an
+  -- offer even if no price is given and the goods are not in a fixed lexicon.
+  -- Infer an advertisement from the *structure* of a leading SELLING clause,
+  -- not from fish/item names. Questions and reflective/past-tense discussions
+  -- about selling must still pass through as ordinary World conversation.
+  local leadingSelling = string.find(text, "^ selling ") ~= nil
+  local directSelling = false
+  if leadingSelling and not string.find(message, "?", 1, true) then
+    -- Lua 5.0 (Vanilla) supports captures through string.find; string.match
+    -- is a newer Lua API and must not be used on the actual 1.18 client.
+    local _, _, itemHead = string.find(text, "^ selling (%S+) ")
+    local _, _, following = string.find(text, "^ selling %S+ (%S+) ")
+    local hasObject = itemHead and itemHead ~= "is" and itemHead ~= "was" and
+        itemHead ~= "can" and itemHead ~= "should" and itemHead ~= "means"
+    local topicVerb = following == "is" or following == "was" or
+        following == "were" or following == "can" or following == "could" or
+        following == "should" or following == "would" or following == "means" or
+        following == "makes" or following == "gets" or
+        following == "seems" or following == "sounds" or
+        following == "sucks"
+    local discussion = somePhrase(text, {"is it worth", "is how i", "is how we",
+        "was so", "was fun", "is a good way", "is the best way", "as a way to",
+        "selling advice", "selling tips", "selling strategy", "selling is",
+        "selling was", "selling can", "selling should", "selling means",
+        "i was selling", "we were selling", "selling yesterday",
+        "selling last night", "selling last week", "selling earlier",
+        "is better than", "is how i", "is how we", "would be a",
+        "made me", "gets you", "is profitable", "on the auction house is",
+        "on the ah is", "is a pain", "on ah sucks"}) or
+        any(text, {"yesterday", "profitable", "strategies"}) and
+            not (price or any(text, contact))
+    -- Discussion cannot become a Trade ad merely because it names gold,
+    -- materials, or another token from the old merchandise lexicon.
+    if (topicVerb or discussion) and not shorthand then return r end
+    directSelling = hasObject and not topicVerb and not discussion
+  end
+  -- Short marketplace requests on World can be just "LF [item]", without
+  -- WTB, gold, or a profession. Require a bracketed item directly after LF,
+  -- with no long prose/question following it; arbitrary "LF" alone is safe.
+  -- Works with WoW item links after stripMarkup, without any item-name list.
+  local display = stripMarkup(message)
+  local _, linkEnd = string.find(display, "^%s*[Ll][Ff]%s+%b[]")
+  local shortItemRequest = false
+  if linkEnd then
+    local tail = string.sub(display, linkEnd + 1)
+    tail = string.gsub(tail, "^%s+", "")
+    local shortTail = normalize(tail)
+    local buyCue = any(shortTail, {"pst", "whisper", "wisp", "tip", "tips", "paying",
+         "mats", "materials", "offer", "gold"}) or string.find(shortTail, " %d+g ") ~= nil
+    local question = string.find(tail, "?", 1, true) or
+         somePhrase(shortTail, {"what does", "what is", "how do", "how to",
+             "what about", "does this", "can anyone explain", "what s"})
+    shortItemRequest = not question and
+         (tail == "" or (string.len(tail) <= 40 and buyCue))
+  end
+  r.intent = shorthand or (buySell and (goods or price)) or shortItemRequest or directSelling
+  if not r.intent then return r end
+  if directSelling then add(r, 11, "leading SELLING merchandise offer") end
+  if shortItemRequest then add(r, 11, "LF + bracketed item request") end
+  if shorthand then add(r, 9, "WTS/WTB/WTT") end
+  if buySell then add(r, 5, "buy/sell offer") end
+  if goods then add(r, 3, "trade goods") end
+  if price then add(r, 2, "price") end
+  if any(text, contact) then add(r, 1, "contact cue") end
+  return r
+end
+
+local function service(text, lower, message)
+  local r = newResult("Services")
+  local lfw = contains(text,"lfw")
+  -- Profession abbreviations are context-dependent: "BS" on its own
+  -- is conversational, but "BS LFW" advertises Blacksmithing work.
+  local shortProfession = lfw and any(text, {"bs","lw","engi","eng","alch","ench"})
+  local job = any(text, professions) or shortProfession
+  local serviceName = any(text, services)
+  local offer = any(text, {"offering","offers","offer","available","crafting","commissions","commission",
+       "service","services","orders","tips","tip","fee","fees","cheap","selling","wts","lfw"})
+  local price = any(text, {"gold","free","tips","tip","fee","fees","cheap","price","prices"})
+  local request = any(text, contact)
+  -- Crafting/enchanting requests are also advertisements in World. Recognize
+  -- concise "LF ench [item]" and "LF [craft] my mats 10g tip" without forcing
+  -- the author to be offering the service. Require leading/request intent and
+  -- profession OR payment+materials context to avoid conversational matches.
+  local leadingLF = string.find(text, "^ lf ") ~= nil
+  local lookingForCraft = somePhrase(text, {"looking for enchanter", "looking for blacksmith",
+      "looking for someone to enchant", "looking for someone to craft"})
+  -- LF must directly introduce the profession/craft; an unrelated "LF advice"
+  -- sentence mentioning enchanting later is normal conversation.
+  local professionRequest = (leadingLF and somePhrase(text, {
+      "lf ench", "lf enchanter", "lf enchant", "lf blacksmith", "lf bs",
+      "lf lw", "lf leatherworker", "lf alchemist", "lf weapon chain",
+      "lf steel weapon chain"})) or lookingForCraft
+  local mats = any(text, {"mats","materials"})
+  local tips = any(text, {"tip","tips"}) or string.find(text, " %d+g ") ~= nil
+  local materialsRequest = leadingLF and mats and tips
+  -- Formatted service directories: "Player Summons: Town1,Town2,Town3,...".
+  -- A summon mention by itself (e.g. chatting about a summon) is NOT enough.
+  local colon = string.find(message, ":", 1, true)
+  local commas = 0
+  local destinationCount = 0
+  if colon and colon < 55 and
+       string.find(string.lower(string.sub(message, 1, colon)), "summons", 1, true) then
+    local _, count = string.gsub(message, ",", "")
+    commas = count
+    if commas >= 3 then
+      local i
+      for i=1,table.getn(summonDestinations) do
+        if contains(text, summonDestinations[i]) then destinationCount = destinationCount + 1 end
+      end
+    end
+  end
+  local summonDirectory = commas >= 3 and destinationCount >= 2 and
+      not string.find(string.sub(message, 1, colon or 1), "?", 1, true)
+  -- Price/speed/destination summon promotions may be formatted with brackets
+  -- instead of a colon-separated directory. Combine multiple independent
+  -- signals; a casual mention of "summons" or "3g" alone is not an ad.
+  local mentionsSummons = any(text, {"summon", "summons", "summoning"})
+  local summonFee = string.find(text, " %d+g ") ~= nil or
+      any(text, {"free", "tip", "tips", "fees", "fee"})
+  local summonSpeed = string.find(text, " under %d+ min") ~= nil or
+      string.find(text, " within %d+ min") ~= nil or
+      somePhrase(text, {"instant summon", "fast summons", "fast summoning", "quick summons"})
+  local summonWhisper = string.find(string.lower(message), "/w", 1, true) ~= nil or
+      any(text, {"pst", "whisper", "dm"})
+  local destinations = false
+  if mentionsSummons then
+    local _, bracketDestinations = string.gsub(message, "%b[]", "")
+    destinations = bracketDestinations >= 2
+  end
+  if not destinations and mentionsSummons then
+    local i, n = 0, 0
+    for i=1,table.getn(summonDestinations) do
+      if contains(text, summonDestinations[i]) then n = n+1 end
+    end
+    destinations = n >= 2
+  end
+  local summonOfferDiscussion = somePhrase(text, {"what does", "what is", "how much",
+      "how do", "how can", "did someone", "someone said", "i heard",
+      "can anyone explain", "the ad says", "the advertisement says",
+      "are summons", "why are summons", "what are summons"})
+  local summonOffer = mentionsSummons and not summonOfferDiscussion and
+      ((summonFee and (summonSpeed or summonWhisper or destinations)) or
+       (summonSpeed and (destinations or summonWhisper)) or
+       (destinations and summonWhisper))
+  -- Taxi is commonly used as shorthand for paid summons.  Treat plain TAXI
+  -- and obfuscated "T A X I" (including T.A.X.I / T-A-X-I after normalization)
+  -- as a *service cue*, never as sufficient evidence by itself.  An actual
+  -- offer must also provide fare/contact and/or a directory of destinations.
+  -- No player, guild, or individual location is blacklisted.
+  local taxiName = contains(text, "taxi") or phrase(text, "t a x i")
+  local taxiOffer, taxiFare, taxiList, taxiPlaces, taxiBooking = false, false, false, 0, false
+  if taxiName then
+    local taxiQuestion = string.find(message, "?", 1, true) and
+        (string.find(text, "^ do ") or string.find(text, "^ does ") or
+         string.find(text, "^ did ") or string.find(text, "^ can ") or
+         string.find(text, "^ would ") or string.find(text, "^ is ") or
+         string.find(text, "^ are ") or string.find(text, "^ why ") or
+         string.find(text, "^ what ") or string.find(text, "^ how "))
+    local taxiDiscussion = taxiQuestion or somePhrase(text, {
+      "what does", "what is", "what are", "how do", "how can", "how much",
+      "can someone explain", "can anyone explain", "anyone know", "i heard",
+      "someone said", "someone told", "the ad says", "the advertisement says",
+      "the term", "the phrase", "talking about", "i hate", "tired of",
+      "sick of", "stop posting", "stop spamming", "yesterday", "last night"
+    })
+    -- The existing normalizer turns "3Gold" into the single token "3gold".
+    taxiFare = string.find(text, " %d+gold ") ~= nil or
+               string.find(text, " %d+g ") ~= nil or
+               string.find(text, " %d+gp ") ~= nil or
+               somePhrase(text, {"free summons", "free taxi", "taxi free"})
+    taxiBooking = request or string.find(string.lower(message), "/w", 1, true) ~= nil
+    local _, plusCount = string.gsub(message, "%+", "")
+    local _, commaCount = string.gsub(message, ",", "")
+    -- Location names provide *context*, not individual blocking rules.
+    local i
+    for i = 1, table.getn(summonDestinations) do
+      if contains(text, summonDestinations[i]) then taxiPlaces = taxiPlaces + 1 end
+    end
+    taxiList = plusCount >= 3 or (commaCount >= 3 and taxiPlaces >= 2)
+    local mentionOffer = serviceName or any(text, {"service", "services", "available", "fast"})
+    taxiOffer = not taxiDiscussion and (
+      (taxiFare and (taxiList or taxiPlaces >= 2 or taxiBooking or mentionOffer)) or
+      (taxiList and (taxiPlaces >= 2 or taxiBooking or mentionOffer)) or
+      (taxiPlaces >= 3 and (taxiBooking or mentionOffer))
+    )
+  end
+  -- "Do I need an enchanter?" has a profession, but no request listing.
+  r.intent = (lfw and job) or (job and offer and (request or price or lfw)) or
+             (serviceName and offer and (request or price or any(text,{"service","services","wts","selling"}))) or
+             professionRequest or materialsRequest or summonDirectory or summonOffer or taxiOffer
+  if not r.intent then return r end
+  if professionRequest then
+    add(r, 8, "craft/enchant request")
+    -- Item link + leading service request is stronger evidence than a lone
+    -- shorthand ("LF LW") and can reach the Careful threshold as well.
+    if leadingLF and (string.find(message, "|Hitem:", 1, true) or
+                      string.find(message, "%b[]")) then
+      add(r, 2, "requested craft with linked/named item")
+    end
+  end
+  if materialsRequest then add(r, 8, "materials and tip for crafting") end
+  if summonDirectory then
+    add(r, 8, "summon service directory")
+    add(r, 3, "multiple named destinations")
+  end
+  if summonOffer then
+    add(r, 8, "summon service promotion")
+    if summonFee then add(r, 3, "summon pricing/free offer") end
+    if summonSpeed then add(r, 2, "summon turnaround promise") end
+    if destinations then add(r, 2, "multiple destinations") end
+    if summonWhisper then add(r, 2, "summon booking contact") end
+  end
+  if taxiOffer then
+    add(r, 8, "TAXI summon service advertisement")
+    if taxiFare then add(r, 3, "taxi fare") end
+    if taxiList then add(r, 3, "multiple destinations listed") end
+    if taxiPlaces >= 2 then add(r, 2, "named travel destinations") end
+    if taxiBooking then add(r, 1, "booking contact") end
+  end
+  if lfw then add(r, 6, "looking for work") end
+  if job then add(r, 3, "profession") end
+  if shortProfession then add(r, 1, "profession shorthand with LFW") end
+  if serviceName then add(r, 3, "service type") end
+  if offer then add(r, 3, "advertised offer") end
+  if request then add(r, 1, "contact cue") end
+  if price or tips then add(r, 2, "price/fee") end
+  if somePhrase(text, {"weapon crusader","enchanter lfw","crafting orders","summon available"}) then
+    add(r, 2, "service format")
+  end
+  return r
+end
+
+local classifiers = {guild, trade, service, lfg}
+local settingNames = {Guild="filterGuild", Trade="filterTrade", Services="filterServices", LFG="filterLFG"}
+local thresholds = {careful=10, balanced=7, aggressive=5}
+
+function WCF.ClassifyMessage(message, allowDisabled)
+  if type(message) ~= "string" then return nil, 0, "invalid message" end
+  local raw = stripMarkup(message)
+  local text = normalize(raw)
+  local lower = lowerLanguages(raw)
+  local penalty = questionPenalty(text, message)
+  local best = nil
+  local i
+  for i = 1, table.getn(classifiers) do
+    local r = classifiers[i](text, lower, message)
+    local active = allowDisabled or (WCF.db and WCF.db[settingNames[r.category]])
+    if r.intent and active then
+      r.score = r.score - penalty
+      if r.score < 0 then r.score = 0 end
+      if not best or r.score > best.score then
+        best = r
+      end
+    end
+  end
+  local sensitivity = (WCF.db and WCF.db.sensitivity) or "balanced"
+  local threshold = thresholds[sensitivity] or 7
+  if not best then return nil, 0, "no advertising intent", false, threshold end
+  local why = table.concat(best.clues or {}, ", ")
+  if penalty > 0 then why = why .. ", conversational/question penalty (-" .. penalty .. ")" end
+  return best.category, best.score, why, best.score >= threshold, threshold
+end
+
+function WCF.IsAdvertisement(message)
+  local category, score, why, blocked = WCF.ClassifyMessage(message)
+  return blocked and true or false, category, score, why
+end

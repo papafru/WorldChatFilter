@@ -1,0 +1,12 @@
+## Interface: 11200
+## Title: World Chat Filter
+## Notes: Context-aware World chat filtering. Does not filter the Trade channel.
+## Author: WorldChatFilter contributors
+## Version: 1.0.0
+## SavedVariablesPerCharacter: WorldChatFilterDB
+Core.lua
+Color.lua
+Statistics.lua
+Classifier.lua
+Filter.lua
+UI.lua
