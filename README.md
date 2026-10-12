@@ -96,7 +96,19 @@ Please redact player names and private information from screenshots before openi
 
 ## Screenshots
 
-In-game screenshots are welcome for the minimap button, settings menu, color presets/picker, and statistics. See [`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md). No mockups are presented as real client screenshots.
+### Minimap button
+
+A compact minimap button for quick access to the filter settings.
+
+![World Chat Filter circular minimap button](docs/screenshots/minimap-icon.webp)
+
+### Settings menu
+
+A lightweight, Blizzard-style dropdown for filter categories, detection sensitivity, chat colors and statistics.
+
+![World Chat Filter settings menu](docs/screenshots/settings-menu.webp)
+
+
 
 ## Contributing and license
 
