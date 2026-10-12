@@ -717,7 +717,11 @@ local function guild(text, lower, message)
   -- Guilds often recruit without mentioning classes, raids or the literal
   -- word "guild": <Secret Hideout> looking for friendly players ... welcome.
   -- The guild tag together with an explicit member search is sufficient.
-  local openAudience = any(text, {"players", "members", "raiders", "people", "recruits"})
+  -- Recruitment may target a language/region rather than explicitly saying
+  -- "players": "looking for English speakers ... /w your class & spec".
+  -- Require a tagged group and searching/invitation context as before.
+  local openAudience = any(text, {"players", "members", "raiders", "people",
+      "recruits", "speakers", "speaker", "gamers", "folks", "newcomers"})
   local taggedOpenRecruitment = guildTag and openAudience and
       (playerSearch or (welcome and somePhrase(text, {
         "players are welcome", "members are welcome", "all players welcome",
@@ -732,6 +736,16 @@ local function guild(text, lower, message)
   local spanishOpenRecruitment = guildTag and spanishRecruiting and
       any(text, {"miembros", "jugadores", "players", "members"}) and
       (raid or discord or spanishCommunity) and not advertisementDiscussion
+  -- Some guild showcases advertise a raid clear record and a website
+  -- without any explicit "looking for"/"recruiting" verb.  Combined guild
+  -- identity + raid content + clear ratios or external homepage are enough
+  -- to identify such promotional posts in World; names/URLs are never listed.
+  local guildWebsite = string.find(lower, "www.", 1, true) ~= nil or
+      string.find(lower, "://", 1, true) ~= nil
+  local raidProgress = string.find(message, "%d+%s*/%s*%d+") ~= nil
+  local guildShowcase = guildTag and raid and
+      ((noun and (raidProgress or guildWebsite)) or
+       (raidProgress and guildWebsite))
   -- Explicit guild invitation + raid + time/timezone is a recruitment ad
   -- whatever its word order. A trailing '?' does not exempt this structure.
   local inviteCue = invite or spanishInvitation or
@@ -750,7 +764,8 @@ local function guild(text, lower, message)
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
-       spanishGuildPromo or spanishOpenRecruitment or timedGuildInvitation
+       spanishGuildPromo or spanishOpenRecruitment or
+       guildShowcase or timedGuildInvitation
   if not r.intent then return r end
   if taggedClassRecruitment then
     add(r, 10, "guild seeking classes/roles for roster")
@@ -768,6 +783,11 @@ local function guild(text, lower, message)
   end
   if timedGuildInvitation then
     add(r, 12, "guild tag + invite + raid time/timezone")
+  end
+  if guildShowcase then
+    add(r, 12, "tagged guild advertising raid progress/website")
+    if raidProgress then add(r, 3, "raid clear progress") end
+    if guildWebsite then add(r, 2, "guild website") end
   end
   if guildCommunityRecruitment then
     add(r, 8, "guild advertising for players with community/activity pitch")
