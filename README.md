@@ -30,6 +30,10 @@
 
 ## Installation
 
+**GitHub addon managers:** Add this repository URL directly: `https://github.com/papafru/WorldChatFilter`. The addon `.toc` and `.lua` files are at the repository root so compatible managers can detect and install it as `WorldChatFilter`.
+
+**Manual installation:**
+
 1. Download **`WorldChatFilter-v1.0.0.zip`** from [GitHub Releases](https://github.com/papafru/WorldChatFilter/releases) once the release asset is available. Do **not** use the automatically generated source ZIP for normal installation.
 2. Close WoW and extract the ZIP.
 3. Copy the **`WorldChatFilter`** directory into `World of Warcraft/Interface/AddOns/`.
