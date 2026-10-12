@@ -1,5 +1,5 @@
 ## Interface: 11200
-## Title: World Chat Filter
+## Title: WorldChatFilter
 ## Notes: Context-aware World chat filtering. Does not filter the Trade channel.
 ## Author: WorldChatFilter contributors
 ## Version: 1.0.0
