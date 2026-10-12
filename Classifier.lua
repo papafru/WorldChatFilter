@@ -141,6 +141,10 @@ end
 -- The names do NOT block messages on their own; they add evidence only
 -- after group-finding intent has been identified.
 local roles = {"dps","dd","dds","tank","tanks","heal","heals","healer","healers","healing"}
+-- Short World recruitment: "Need DPS [quest]" / "DPS needed" with no
+-- dungeon alias or literal "quest". Keep professions and potions separate.
+local directNeedRoles = {dps=true, dd=true, dds=true, tank=true, tanks=true,
+    heal=true, heals=true, healer=true, healers=true, healing=true}
 local dungeons = {"sfk","bm","brd","lbrs","ubrs","brs","strat","stratholme","scholo", "scholomance",
  "mara","maraudon","zf","zg","dm","dire","maul","sm","rfc","wc","rfk","rfd","stockades",
  "deadmines","gnomer","gnomeregan","ulda","uldaman","st","bfd","sunken","temple","mc",
@@ -327,6 +331,16 @@ local function lfg(text, lower, message)
   local need = any(text, {"need","needs","needing","needed","missing"})
   local slots = somePhrase(text, {"last spot","last slot","one more","two more","spots open","slots open","fill group"})
   local role = any(text, roles)
+  -- A leading player-role demand is LFG even when followed only by a quest
+  -- title. Do not require an explicit dungeon, "quest" or a second role.
+  local _, _, neededRole = string.find(text, "^ need ([%a]+) ")
+  local _, _, neededAfterRole = string.find(text, "^ ([%a]+) needed ")
+  local directRoleRequest = (neededRole and directNeedRoles[neededRole]) or
+      (neededAfterRole and directNeedRoles[neededAfterRole])
+  local roleDiscussion = somePhrase(text, {"heal potion", "healing potion",
+      "heal spell", "healing spell", "dps meter", "dps addon", "dps advice",
+      "dps guide", "dps rotation", "tank addon", "for my screenshot"})
+  if directRoleRequest and roleDiscussion then directRoleRequest = false end
   local playerClass = any(text, playerClasses)
   local dungeon = any(text, dungeons)
   local activity = any(text, activities)
@@ -426,17 +440,21 @@ local function lfg(text, lower, message)
   if (countedLfRoleOrClass or countedLookingRoleOrClass) and
       (slotDiscussion or formatDiscussion) and
       not dungeonRosterCount and not speakerRequest then return r end
-  r.ignoreQuestionPenalty = speakerRequest or dungeonRosterCount or scheduledDungeonListing
-  r.intent = speakerRequest or scheduledDungeonListing or dungeonRosterCount or
+  r.ignoreQuestionPenalty = directRoleRequest or speakerRequest or
+      dungeonRosterCount or scheduledDungeonListing
+  r.intent = directRoleRequest or speakerRequest or scheduledDungeonListing or
+      dungeonRosterCount or
       scheduledRoleDemand or leadingLfDungeon or
       needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
     (explicit and (not (hasLfSlots or lfmSlots) or slotIntent)) or
     (lf and (role or dungeon or activity or (prefixed and playerClass))) or
     (looking and (role or contains(text, "group") or contains(text, "party"))) or
-    (need and role and (dungeon or activity or typeCount >= 2 or summoning)) or
+    (need and role and not roleDiscussion and
+      (dungeon or activity or typeCount >= 2 or summoning)) or
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
+  if directRoleRequest then add(r, 11, "direct Need <role> / <role> needed request") end
   if speakerRequest then add(r, 18, "LF/LFM/Looking for X speakers") end
   if dungeonRosterCount then add(r, 12, "dungeon + player slot + role/class in any order") end
   if scheduledDungeonListing then
