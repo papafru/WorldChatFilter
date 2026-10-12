@@ -6,7 +6,7 @@ A lightweight, standalone World-chat spam filter for Vanilla-style WoW clients (
 
 ### What's included
 
-- Context-aware detection of trade ads, group finding, guild recruitment, profession services, summons/taxi listings, and repeated posts.
+- Context-aware detection of trade ads, group finding (including scheduled raid/PUG demands), multilingual guild recruitment, profession services, summons/taxi listings, and repeated posts.
 - World-only filtering: the actual Trade, General, LookingForGroup, Guild, Party, and Whisper channels remain untouched.
 - Careful / Balanced / Aggressive sensitivity levels.
 - Optional World chat tint, four color presets and RGB Color Picker (default Warm Stone).
