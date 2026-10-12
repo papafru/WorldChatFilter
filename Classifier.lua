@@ -793,6 +793,16 @@ local function guild(text, lower, message)
   -- community announcements like "comunidad activa ... te esperamos".
   local guildTag = string.find(message, "<[^<>]+>") ~= nil
   local taggedSpeakerSearch = guildTag and hasSpeakerSearch(text)
+  -- Direct invitations may advertise a named guild without using "recruiting",
+  -- LFM or player-role requests: "Join THE CULT, we're a social guild".
+  -- Only classify as Guild when a guild/community noun or <Guild Name> tag
+  -- appears; an ordinary "Join the raid" is not a guild advertisement.
+  local joinCallToAction = string.find(text, "^ join ") ~= nil or
+      string.find(text, "^ come join ") ~= nil or
+      string.find(text, "^ please join ") ~= nil or
+      somePhrase(text, {"join us", "join our", "join my guild", "join the guild",
+          "join our ranks", "come join", "invited to join"})
+  local directGuildJoin = joinCallToAction and (noun or guildTag)
   local playerSearch = searching or somePhrase(text, {
       "looking mostly for", "looking mainly for", "looking primarily for",
       "now looking", "looking to recruit", "recruiting players"})
@@ -849,7 +859,7 @@ local function guild(text, lower, message)
       somePhrase(text, {"server time", "realm time", "time zone"})
   local raidTime = string.find(message, "%d%d?:%d%d") ~= nil or timeZone
   local timedGuildInvitation = guildTag and inviteCue and raid and raidTime
-  r.ignoreQuestionPenalty = timedGuildInvitation or taggedSpeakerSearch
+  r.ignoreQuestionPenalty = timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
@@ -858,10 +868,13 @@ local function guild(text, lower, message)
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
        spanishGuildPromo or spanishOpenRecruitment or
-       guildShowcase or timedGuildInvitation or taggedSpeakerSearch
+       guildShowcase or timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
   if not r.intent then return r end
   if taggedSpeakerSearch then
     add(r, 22, "tagged guild seeking X speakers")
+  end
+  if directGuildJoin then
+    add(r, 12, "direct join invitation with guild/community context")
   end
   if taggedClassRecruitment then
     add(r, 10, "guild seeking classes/roles for roster")
