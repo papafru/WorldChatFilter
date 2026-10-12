@@ -81,6 +81,44 @@ local function somePhrase(text, words)
   return false
 end
 
+-- High-recall World group search: LF / LFM / LF1M / Looking for followed
+-- anywhere later in the same message by "speakers". We intentionally do
+-- NOT check a language dictionary: any X speakers (including Bluetooth)
+-- counts, per the chosen aggressive false-positive policy.
+local speakerSearchPatterns = {
+  {" looking for ", true}, {" lf ", true}, {" lfm ", true},
+  {" lf%d+m ", false}, {" lfm%d*m? ", false}
+}
+local function hasSpeakerSearch(text)
+  if not contains(text, "speakers") then return false end
+  local i
+  for i = 1, table.getn(speakerSearchPatterns) do
+    local pattern, plain = speakerSearchPatterns[i][1], speakerSearchPatterns[i][2]
+    local from, finish = string.find(text, pattern, 1, plain)
+    if from and string.find(text, " speakers ", finish + 1, true) then
+      return true
+    end
+  end
+  return false
+end
+
+-- Absolute prefix rule, after normalizing separators and letter case:
+-- RU GUILD / RU-GUILD / RUSSIAN GILD / RU-GILD and comparable spellings.
+-- It must match the BEGINNING only, not a later mention in a sentence.
+local ruGuildPrefixes = {ru=true, rus=true, russian=true, russ=true,
+    russki=true, russkii=true}
+local guildSpellings = {guild=true, gild=true, gilde=true, guld=true}
+local compactRuGuildPrefixes = {ruguild=true, rugild=true, rugilde=true,
+    rusguild=true, rusgild=true, russianguild=true, russiangild=true}
+local function hasRuGuildPrefix(text)
+  local _, _, origin, word = string.find(text, "^%s*([%a]+)%s+([%a]+)%s")
+  if origin and ruGuildPrefixes[origin] and guildSpellings[word] then
+    return true
+  end
+  local _, _, compact = string.find(text, "^%s*([%a]+)%s")
+  return compact and compactRuGuildPrefixes[compact] or false
+end
+
 -- Unicode-safe *selective* UTF-8 Russian folding for common ad stems.
 -- ASCII-only string.lower() does not fold UTF-8 Cyrillic in Vanilla.
 local function lowerLanguages(raw)
@@ -279,6 +317,10 @@ local function lfg(text, lower, message)
                    string.find(text, "^ lfm ") ~= nil or
                    string.find(text, "^ lfp ") ~= nil
   local explicit = hasLfSlots or lfmSlots or any(text, {"lfg","lfm","lfp","lftank","lfhealer","lfdps","lfr"})
+  -- Tagged speaker recruitment belongs to Guild. An untagged LF ... speakers
+  -- request is LFG; do not let it bypass a disabled Guild filter.
+  local speakerRequest = hasSpeakerSearch(text) and
+      not string.find(message, "<[^<>]+>") and not hasRuGuildPrefix(text)
   local lf = contains(text, "lf") or string.find(text, " lf%d+ ") ~= nil or hasLfSlots
   local looking = somePhrase(text, {"looking for","searching for","looking 4"})
   local need = any(text, {"need","needs","needing","needed","missing"})
@@ -381,9 +423,10 @@ local function lfg(text, lower, message)
       "how do you write", "someone said", "i heard", "people type",
       "people say", "can someone explain"})
   if (countedLfRoleOrClass or countedLookingRoleOrClass) and
-      (slotDiscussion or formatDiscussion) and not dungeonRosterCount then return r end
-  r.ignoreQuestionPenalty = dungeonRosterCount or scheduledDungeonListing
-  r.intent = scheduledDungeonListing or dungeonRosterCount or
+      (slotDiscussion or formatDiscussion) and
+      not dungeonRosterCount and not speakerRequest then return r end
+  r.ignoreQuestionPenalty = speakerRequest or dungeonRosterCount or scheduledDungeonListing
+  r.intent = speakerRequest or scheduledDungeonListing or dungeonRosterCount or
       scheduledRoleDemand or leadingLfDungeon or
       needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
@@ -393,6 +436,7 @@ local function lfg(text, lower, message)
     (need and role and (dungeon or activity or typeCount >= 2 or summoning)) or
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
+  if speakerRequest then add(r, 18, "LF/LFM/Looking for X speakers") end
   if dungeonRosterCount then add(r, 12, "dungeon + player slot + role/class in any order") end
   if scheduledDungeonListing then
     add(r, 12, "dungeon/raid + weekday + scheduled clock time")
@@ -438,6 +482,14 @@ end
 -- guild, Discord and raid names are NEVER sufficient by themselves.
 local function guild(text, lower, message)
   local r = newResult("Guild")
+  -- Prefix is intentionally absolute: even questions or "not recruiting"
+  -- that START with RU[-]GUILD are filtered in the World channel.
+  if hasRuGuildPrefix(text) then
+    r.intent = true
+    r.ignoreQuestionPenalty = true
+    add(r, 20, "RU/Russian guild prefix")
+    return r
+  end
   -- Explicit denial of recruitment is discussion, not an advertisement.
   if somePhrase(text, {"not recruiting", "not looking for recruits",
       "not accepting applications", "we are not recruiting",
@@ -700,6 +752,7 @@ local function guild(text, lower, message)
   -- Recognize player/class search with optional adverbs, and Spanish
   -- community announcements like "comunidad activa ... te esperamos".
   local guildTag = string.find(message, "<[^<>]+>") ~= nil
+  local taggedSpeakerSearch = guildTag and hasSpeakerSearch(text)
   local playerSearch = searching or somePhrase(text, {
       "looking mostly for", "looking mainly for", "looking primarily for",
       "now looking", "looking to recruit", "recruiting players"})
@@ -756,7 +809,7 @@ local function guild(text, lower, message)
       somePhrase(text, {"server time", "realm time", "time zone"})
   local raidTime = string.find(message, "%d%d?:%d%d") ~= nil or timeZone
   local timedGuildInvitation = guildTag and inviteCue and raid and raidTime
-  r.ignoreQuestionPenalty = timedGuildInvitation
+  r.ignoreQuestionPenalty = timedGuildInvitation or taggedSpeakerSearch
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
@@ -765,8 +818,11 @@ local function guild(text, lower, message)
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
        spanishGuildPromo or spanishOpenRecruitment or
-       guildShowcase or timedGuildInvitation
+       guildShowcase or timedGuildInvitation or taggedSpeakerSearch
   if not r.intent then return r end
+  if taggedSpeakerSearch then
+    add(r, 22, "tagged guild seeking X speakers")
+  end
   if taggedClassRecruitment then
     add(r, 10, "guild seeking classes/roles for roster")
     if discord then add(r, 2, "guild recruitment contact") end
