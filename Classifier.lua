@@ -160,7 +160,28 @@ local activities = {"rep","reputation","farm","farming","run","runs","group","gr
 local professions = {"enchanter","enchanting","enchants","enchant","alchemist","alchemy","blacksmith",
  "blacksmithing","tailor","tailoring","leatherworker","leatherworking","engineer","engineering",
  "crafter","crafting","jewelcrafter","jewelcrafting","jeweler","jeweller",
-  "inscription","transmute","transmutes","crusader","arcanite","flask","flasks"}
+ "inscription","transmute","transmutes","crusader","arcanite","flask","flasks",
+ "goldsmith","goldsmithing","gemologist","gemology","gemmologist",
+ "inscriber","scribe","herbalist","herbalism","mining","miner","skinning","skinner",
+ "cooking","cook","fishing","fisherman","first aid"}
+-- Confirmed WoW abbreviations (BS, LW, JC, ENG, ALCH, ENCH, CHANT, etc.)
+-- plus Turtle Jewelcrafting specializations. Short ambiguous tokens are
+-- contextual unless the whole message is just the profession shorthand.
+local professionNames = {"enchanter","enchanters","enchanting","blacksmith",
+ "blacksmiths","blacksmithing","engineer","engineers","engineering","alchemist",
+ "alchemists","alchemy","jewelcrafter","jewelcrafters","jewelcrafting",
+ "jeweler","jeweller","goldsmith","goldsmiths","goldsmithing","gemologist",
+ "gemologists","gemmologist","gemology","leatherworker","leatherworkers",
+ "leatherworking","tailor","tailors","tailoring","scribe","inscriber",
+ "inscription","herbalist","herbalism","miner","mining","skinner",
+ "skinning","cook","cooking","fisherman","fishing","first aid"}
+local professionShort = {"bs","lw","jc","eng","engi","engin","alch",
+ "ench","chant","chanter","tl","inscr","insc","scribe","herb",
+ "mine","skin","fish","cook","fa"}
+local professionTerms = {}
+local pi
+for pi=1,table.getn(professionNames) do professionTerms[professionNames[pi]] = true end
+for pi=1,table.getn(professionShort) do professionTerms[professionShort[pi]] = true end
 local merchandise = {"gold","g","mats","materials","herbs","herb","ore","ores","item","items","boe","epic",
  "recipe","recipes","mount","mounts","stack","stacks","enchants","enchant","cloth","potions","potion"}
 local services = {"boost","boosts","boosting","carry","carries","carrying","summon","summons","summoning",
@@ -1011,37 +1032,52 @@ end
 
 local function service(text, lower, message)
   local r = newResult("Services")
-  local lfw = contains(text,"lfw")
-  -- An explanation of the LFW shorthand is conversation, not an offer.
-  if lfw and string.find(message, "?", 1, true) and
-      any(text, {"mean", "means", "meaning"}) then return r end
-  -- Profession abbreviations are context-dependent: "BS" on its own
-  -- is conversational, but "BS LFW" advertises Blacksmithing work.
-  local shortProfession = lfw and any(text, {"bs","lw","engi","eng","alch","ench","jc"})
-  local job = any(text, professions) or shortProfession
+  local lfwToken = contains(text, "lfw")
+  -- "LFW", "LF WORK" and "Looking for work" are equivalent, regardless
+  -- of where they occur (e.g. "Goldsmith LF work [item]").
+  local lfWorkPhrase = somePhrase(text, {"lf work", "lfwork", "looking for work"})
+  local lfw = lfwToken or lfWorkPhrase
+  local workDiscussion = somePhrase(text, {"what does", "what is", "what do",
+      "does it mean", "mean by", "meaning of", "lfw mean", "lfw means", "lf work mean", "lf work means", "why does", "how much do",
+      "how much does", "what do you think", "is it worth", "i heard",
+      "someone said", "yesterday", "the term", "the phrase", "the ad says"}) and
+      not any(text, {"pst", "whisper", "tip", "tips", "mats", "materials"})
+  -- A question ABOUT "BS LFW" is still World conversation; a short
+  -- "LFW?" is an advert asking for work, not an explanation.
+  if lfw and workDiscussion then return r end
+  local shortProfession = any(text, professionShort)
+  local namedProfession = any(text, professionNames)
+  local job = any(text, professions) or (shortProfession and lfw)
+  local profession = shortProfession or namedProfession
   local serviceName = any(text, services)
   local offer = any(text, {"offering","offers","offer","available","crafting","commissions","commission",
-       "service","services","orders","tips","tip","fee","fees","cheap","selling","wts","lfw"})
+       "service","services","orders","tips","tip","fee","fees","cheap","selling","wts","lfw",
+       "work", "working", "for hire", "can craft", "will craft", "providing"})
   local price = any(text, {"gold","free","tips","tip","fee","fees","cheap","price","prices"})
   local request = any(text, contact)
-  -- Crafting/enchanting requests are also advertisements in World. Recognize
-  -- concise "LF ench [item]" and "LF [craft] my mats 10g tip" without forcing
-  -- the author to be offering the service. Require leading/request intent and
-  -- profession OR payment+materials context to avoid conversational matches.
+  local linkedItem = string.find(message, "|Hitem:", 1, true) ~= nil or
+      string.find(message, "%b[]") ~= nil
+  -- A lone profession/shorthand in World is a short request/offer. In longer
+  -- sentences require an actual trading/recruitment signal or item link.
+  local _, _, loneWord = string.find(text, "^ ([%a]+) $")
+  local bareProfession = (loneWord and professionTerms[loneWord]) or false
   local leadingLF = string.find(text, "^ lf ") ~= nil
-  local lookingForCraft = somePhrase(text, {"looking for enchanter", "looking for blacksmith",
-      "looking for someone to enchant", "looking for someone to craft",
-       "looking for jewelcrafter", "looking for a jewelcrafter",
-       "looking for jeweler", "looking for a jeweler",
-       "looking for jeweller", "looking for a jeweller", "looking for jc"})
-  -- LF must directly introduce the profession/craft; an unrelated "LF advice"
-  -- sentence mentioning enchanting later is normal conversation.
-  local professionRequest = (leadingLF and somePhrase(text, {
-      "lf ench", "lf enchanter", "lf enchant", "lf blacksmith", "lf bs",
-      "lf lw", "lf leatherworker", "lf alchemist",
-       "lf jc", "lf jewelcrafter", "lf jewelcrafting", "lf jeweler", "lf jeweller",
-       "lf weapon chain",
-      "lf steel weapon chain"})) or lookingForCraft
+  local _, _, firstLF = string.find(text, "^ lf ([%a]+) ")
+  local _, _, firstLooking = string.find(text, "^ looking for ([%a]+) ")
+  if firstLooking == "a" or firstLooking == "an" then
+    local _, _, actual = string.find(text, "^ looking for a?n? ([%a]+) ")
+    firstLooking = actual
+  end
+  local wantedProfession = (firstLF and professionTerms[firstLF]) or
+      (firstLooking and professionTerms[firstLooking])
+  local lookingForCraft = somePhrase(text, {"looking for someone to enchant",
+      "looking for someone to craft", "lf weapon chain", "lf steel weapon chain"})
+  local professionRequest = wantedProfession or lookingForCraft
+  local ambiguousShort = any(text, {"fish", "mine", "fa", "skin"}) and not namedProfession
+  local professionOffer = profession and not ambiguousShort and (linkedItem or request or
+      any(text, {"offering", "offers", "available", "crafting", "commission",
+        "commissions", "tips", "tip", "for hire", "can craft", "will craft",
+        "orders", "service", "services", "wts"})) and not workDiscussion
   local mats = any(text, {"mats","materials"})
   local tips = any(text, {"tip","tips"}) or string.find(text, " %d+g ") ~= nil
   local materialsRequest = leadingLF and mats and tips
@@ -1140,15 +1176,19 @@ local function service(text, lower, message)
   -- A leading LF + named profession is a direct request even when phrased
   -- as a brief question (LF JC?). Unlike a question ABOUT an LF phrase,
   -- its message starts with the actual request.
-  r.ignoreQuestionPenalty = leadingLF and professionRequest
-  r.intent = (lfw and job) or (job and offer and (request or price or lfw)) or
+  r.ignoreQuestionPenalty = (lfw or bareProfession or wantedProfession) and not workDiscussion
+  r.intent = (lfw and not workDiscussion) or bareProfession or professionOffer or
+             (job and offer and (request or price or lfw)) or
              (serviceName and offer and (request or price or any(text,{"service","services","wts","selling"}))) or
              professionRequest or materialsRequest or summonDirectory or summonOffer or taxiOffer
   if not r.intent then return r end
+  if lfw and not workDiscussion then
+    add(r, 13, "LFW / LF WORK profession work advertisement")
+  end
+  if professionOffer then add(r, 12, "profession + item/contact/service offer") end
+  if bareProfession then add(r, 12, "single-word profession request") end
   if professionRequest then
-    -- A direct LF + profession is a clear service request, even with no item
-    -- or payment attached (e.g. LF JC, LF JC [Deep Sapphire Circlet]).
-    add(r, 10, "craft/enchant request")
+    add(r, 12, "LF/Looking for profession request")
     -- Item link + leading service request is stronger evidence than a lone
     -- shorthand ("LF LW") and can reach the Careful threshold as well.
     if leadingLF and (string.find(message, "|Hitem:", 1, true) or
@@ -1177,7 +1217,9 @@ local function service(text, lower, message)
   end
   if lfw then add(r, 6, "looking for work") end
   if job then add(r, 3, "profession") end
-  if shortProfession then add(r, 1, "profession shorthand with LFW") end
+  if shortProfession and (lfw or professionRequest or professionOffer) then
+    add(r, 1, "profession abbreviation")
+  end
   if serviceName then add(r, 3, "service type") end
   if offer then add(r, 3, "advertised offer") end
   if request then add(r, 1, "contact cue") end
