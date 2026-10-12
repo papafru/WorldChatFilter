@@ -1,13 +1,17 @@
-# World Chat Filter v0.3.23 — Beta
+# World Chat Filter v1.0.0
 
 **Keep the conversation. Filter the noise.**
 
-World-only advertisement filtering for Vanilla-style WoW (1.12 API / 1.18-based clients). Actual Trade, General, guild, party and other channels are not filtered.
+World Chat Filter is a client-side rule-based spam filter for the **World** channel only, built for Vanilla WoW 1.12 API and 1.18-based clients such as OctoWoW.
 
-Install this `WorldChatFilter` folder inside `Interface/AddOns/`, then type `/wcf` in-game. Use `/wcf stats` for statistics and the **World Chat Color** submenu for presets or the RGB picker.
+- Detects context-based Trade, LFG (including open-world group requests), guild recruitment, services and repeated advertisements in World.
+- Does not filter messages in the actual Trade, General, LookingForGroup, Guild, Party, Raid or Whisper channels.
+- Blizzard-style options via `/wcf`, sensitivity settings, minimap button and World chat tint presets + RGB Color Picker.
+- Statistics via `/wcf stats`; diagnostics via `/wcf test <message>`.
+- SavedVariables are preserved when upgrading from WorldChatFilter betas.
 
-v0.3.23 extends the general LFG patterns to recognize **LF + dungeon**, **need + number + role/class**, and **compact dungeon roster listings** (such as `DEADMINES HEAL 2DPS`), while preserving chat and World/Trade separation. It includes previous scheduled PUG, multilingual recruitment and service detection.
+Install the `WorldChatFilter` directory into `Interface/AddOns/`, then type `/wcf` in game. For full instructions, see https://github.com/papafru/WorldChatFilter.
 
-Settings are saved per character (`WorldChatFilterDB`). The full documentation is in the repository root README. This beta is **not** an official GitHub v1.0.0 release.
+This is a rule-based classifier, not AI. Some advertisements may be missed and false positives are possible; bug reports are welcome.
 
-MIT licensed.
+Licensed under the MIT License, see `LICENSE`.

@@ -8,9 +8,9 @@
 - Add regression tests for these patterns, ordinary chat and World/Trade isolation.
 - Keep the color picker, statistics and other features unchanged.
 
-## 1.0.0 — Draft (not yet released)
+## 1.0.0 — 2026-10-12
 
-Planned public release. Documentation was initially prepared from the **v0.3.22 beta**; the latest beta is **v0.3.23**.
+Initial stable release based on **v0.3.23**, including the latest contextual LFG fixes.
 
 - World-only contextual detection for trade, group finding, guild recruitment, professions/services, summon/taxi listings, and repeat spam.
 - Expanded short-hand LFG detection (e.g., `LF7M`, `LF 1M`, `LF1Healer`, `LF 2 DPS`, and class variants).

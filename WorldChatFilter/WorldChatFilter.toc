@@ -2,7 +2,7 @@
 ## Title: World Chat Filter
 ## Notes: Context-aware World chat filtering. Does not filter the Trade channel.
 ## Author: WorldChatFilter contributors
-## Version: 0.3.23
+## Version: 1.0.0
 ## SavedVariablesPerCharacter: WorldChatFilterDB
 Core.lua
 Color.lua
