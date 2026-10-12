@@ -11,7 +11,7 @@ WorldChatFilterDB={enabled=true,filterGuild=true,filterLFG=true,filterServices=t
 for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile('WorldChatFilter/'..f) end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter
-assert(W.VERSION == '0.3.23', 'New beta version expected')
+assert(W.VERSION == '1.0.0', 'New beta version expected')
 local ads={
  'lf scarley graveyard',
  'lf scarlet graveyard*',
