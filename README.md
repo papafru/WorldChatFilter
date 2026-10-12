@@ -1,6 +1,6 @@
 # World Chat Filter
 
-> **Version 1.0.0 source.** The latest implicit-LFG improvements from beta v0.3.23 are included.
+> **Current source:** The `main` branch includes post-release classifier bugfixes. The original `v1.0.0` tag remains a historical snapshot; for manual installation, use the updated release ZIP linked below.
 
 **Keep the conversation. Filter the noise.**
 
@@ -34,7 +34,7 @@
 
 **Manual installation:**
 
-1. Download **`WorldChatFilter-v1.0.0.zip`** from [GitHub Releases](https://github.com/papafru/WorldChatFilter/releases) once the release asset is available. Do **not** use the automatically generated source ZIP for normal installation.
+1. Download **[WorldChatFilter-v1.0.0-Bugfix.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.0.0/WorldChatFilter-v1.0.0-Bugfix.zip)** from the [GitHub Release](https://github.com/papafru/WorldChatFilter/releases/tag/v1.0.0). Do **not** use GitHub's automatically generated **Source code (ZIP)** for manual installation: it points to the original release tag, not the updated bugfix archive.
 2. Close WoW and extract the ZIP.
 3. Copy the **`WorldChatFilter`** directory into `World of Warcraft/Interface/AddOns/`.
 4. Make sure this file exists: `Interface/AddOns/WorldChatFilter/WorldChatFilter.toc` (no extra nesting).
