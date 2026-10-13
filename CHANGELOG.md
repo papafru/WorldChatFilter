@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0-dev — In progress
+
+- Add `/wcf toggle` as a single-button macro command: saves the ON/OFF state, prints the status, and refreshes the World color/UI. All category preferences and other chat channels are preserved.
+- Development-only changes on `v1.1-dev`, independent from `main` and stable v1.0.1.
+
 ## 1.0.1 — 2026-10-13
 
 - Detect direct guild join invitations without the literal word `recruiting` (for example `Join THE CULT, we're a social guild`).

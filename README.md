@@ -1,6 +1,6 @@
 # World Chat Filter
 
-> **Latest stable release: [v1.0.1](https://github.com/papafru/WorldChatFilter/releases/tag/v1.0.1).** The original `v1.0.0` tag remains available as a historical snapshot.
+> **Development branch (`v1.1-dev`):** Experimental v1.1 features, not a stable release. Update your local development checkout with `git pull --ff-only`. **Latest stable release: [v1.0.1](https://github.com/papafru/WorldChatFilter/releases/tag/v1.0.1).**
 
 **Keep the conversation. Filter the noise.**
 
@@ -69,6 +69,7 @@ The color is applied to **new World messages only**, not previously displayed li
 | Command | Action |
 | --- | --- |
 | `/wcf` | Open the settings menu |
+| `/wcf toggle` | Toggle World filtering ON/OFF; suitable for an in-game macro |
 | `/wcf stats` | Toggle the statistics panel |
 | `/wcf on` / `/wcf off` | Enable / disable filtering |
 | `/wcf status` | Print current filter status and counts |

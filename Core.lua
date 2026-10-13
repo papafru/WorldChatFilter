@@ -1,8 +1,8 @@
--- WorldChatFilter 1.0.0: World-only chat filter
+-- WorldChatFilter v1.1 development: World-only chat filter
 -- WoW Vanilla 1.12 API / 1.18-based clients; Lua 5.0 syntax only.
 WorldChatFilter = {}
 local WCF = WorldChatFilter
-WCF.VERSION = "1.0.1"
+WCF.VERSION = "1.1.0-dev"
 WCF.CHANNEL = "World"
 WCF.sessionHidden = 0
 WCF.db = nil
@@ -92,7 +92,7 @@ function WCF.Status()
 end
 
 function WCF.Help()
-  WCF.Print("/wcf = options | /wcf on | /wcf off | /wcf status | /wcf help")
+  WCF.Print("/wcf = options | /wcf toggle | /wcf on | /wcf off | /wcf status | /wcf help")
   WCF.Print("/wcf test <message> = explain classification | /wcf debug = toggle block reasons")
   WCF.Print("/wcf mode careful|balanced|aggressive = set detection sensitivity")
   WCF.Print("/wcf stats = show session and all-time statistics")
@@ -119,9 +119,15 @@ SlashCmdList["WORLDCHATFILTER"] = function(raw)
     if WCF.ToggleStatsUI then WCF.ToggleStatsUI() end
   elseif command == "status" then
     WCF.Status()
-  elseif command == "on" or command == "off" then
+  elseif command == "on" or command == "off" or command == "toggle" then
     if not WCF.db then WCF.Initialize() end
-    WCF.db.enabled = (command == "on")
+    -- Macro-friendly toggle reuses the normal ON/OFF behavior, including
+    -- SavedVariables and refreshing the World-only tint and settings UI.
+    if command == "toggle" then
+      WCF.db.enabled = not WCF.db.enabled
+    else
+      WCF.db.enabled = (command == "on")
+    end
     WCF.Status()
     if WCF.RefreshWorldColor then WCF.RefreshWorldColor() end
     if WCF.RefreshUI then WCF.RefreshUI() end
