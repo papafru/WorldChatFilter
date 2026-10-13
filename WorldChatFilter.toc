@@ -5,8 +5,10 @@
 ## Version: 1.1.0-dev
 ## SavedVariablesPerCharacter: WorldChatFilterDB
 Core.lua
+CustomFilters.lua
 Color.lua
 Statistics.lua
 Classifier.lua
 Filter.lua
+CustomFiltersUI.lua
 UI.lua

@@ -2,6 +2,9 @@
 
 ## 1.1.0-dev — In progress
 
+- Add custom World-only player/word/phrase filters, a paginated native settings panel, case-insensitive partial and whole-word matching, and saved per-character lists.
+- Add Block/Unblock from World Chat to the 1.12 chat player's right-click FRIEND popup without invoking Blizzard /ignore. Track custom blocks separately in statistics; the master toggle and World-only channel gate remain authoritative.
+- Add `/wcf custom`, `/wcf block player|text|word`, and `/wcf unblock player|text` commands for quick control.
 - Add `/wcf toggle` as a single-button macro command: saves the ON/OFF state, prints the status, and refreshes the World color/UI. All category preferences and other chat channels are preserved.
 - Development-only changes on `v1.1-dev`, independent from `main` and stable v1.0.1.
 

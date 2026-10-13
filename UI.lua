@@ -35,6 +35,8 @@ local function addToggle(text, key, level)
   local db = getDB()
   addItem(text, level, function()
     db[key] = not db[key]
+    if key == "customEnabled" and WCF.InvalidateMessageCache then WCF.InvalidateMessageCache() end
+    if key == "customEnabled" and WCF.RefreshCustomFiltersUI then WCF.RefreshCustomFiltersUI() end
     if key == "enabled" or key == "tintWorld" then
       if WCF.RefreshWorldColor then WCF.RefreshWorldColor() end
     end
@@ -91,6 +93,7 @@ local function populateMenu(self, level)
     addToggle("Enable World Chat Filter", "enabled", level)
     addItem("World Chat Color", level, nil, nil, true, "worldColor")
     addItem("Filter Categories", level, nil, nil, true, "filters")
+    addItem("Custom Filters", level, nil, nil, true, "custom")
     addItem("Detection Sensitivity", level, nil, nil, true, "sensitivity")
     addItem("Statistics Panel", level, function() if WCF.ToggleStatsUI then WCF.ToggleStatsUI() end end)
     addItem("Information", level, nil, nil, true, "info")
@@ -99,7 +102,15 @@ local function populateMenu(self, level)
     addItem("Close", level, function() CloseDropDownMenus() end)
   elseif level == 2 then
     local group = UIDROPDOWNMENU_MENU_VALUE
-    if group == "filters" then
+    if group == "custom" then
+      addTitle("Personal World Chat Filters", level)
+      addToggle("Enable Custom Filters", "customEnabled", level)
+      addItem("Manage Blocked Players & Phrases...", level, function()
+        if WCF.ToggleCustomFiltersUI then WCF.ToggleCustomFiltersUI() end
+      end)
+      addTitle("Blocked players: " .. tostring(table.getn(db.blockedPlayers or {})), level)
+      addTitle("Blocked phrases: " .. tostring(table.getn(db.blockedPhrases or {})), level)
+    elseif group == "filters" then
       addTitle("World Chat Filters", level)
       addToggle("Trade / WTS / WTB", "filterTrade", level)
       addToggle("LFG / LFM / Rep Farm", "filterLFG", level)

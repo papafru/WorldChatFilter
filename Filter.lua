@@ -5,6 +5,11 @@ local activity = {}       -- Recent messages per author, pruned after 30 seconds
 local lastActivitySweep = -30
 local cacheKey, cacheAt, cacheHide = nil, -100, false
 
+-- Settings may change while a chat frame redraws the same message.
+function WCF.InvalidateMessageCache()
+  cacheKey, cacheAt, cacheHide = nil, -100, false
+end
+
 -- Ad recognition is implemented by Classifier.lua, separate from chat hooking.
 -- All detections are weighted by context and pass through an intent gate.
 
@@ -91,7 +96,16 @@ function WCF.ShouldHideChannelMessage(message, author, baseName, decoratedName, 
   end
 
   local hide = false
-  local category, score, why, blocked = WCF.ClassifyMessage(message)
+  local category, score, why, blocked
+  local customCategory, customWhy
+  if WCF.MatchCustomFilter then
+    customCategory, customWhy = WCF.MatchCustomFilter(message, author)
+  end
+  if customCategory then
+    category, score, why, blocked = customCategory, 0, customWhy, true
+  else
+    category, score, why, blocked = WCF.ClassifyMessage(message)
+  end
   if blocked then
     hide = true
     if WCF.db.debug then

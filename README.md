@@ -19,6 +19,7 @@
 - **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
 - **Statistics:** Session and all-time hidden-message counts by category, saved per character.
 - **Diagnostics:** Explain sample classifications and troubleshoot channel identification.
+- **Custom World-only filters (v1.1 dev):** Personal blocked-player and word/phrase lists, a manager panel, substring/whole-word matching, and right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
 - **No dependencies:** Works without SocialChat or external libraries.
 
 ## Compatibility
@@ -70,6 +71,12 @@ The color is applied to **new World messages only**, not previously displayed li
 | --- | --- |
 | `/wcf` | Open the settings menu |
 | `/wcf toggle` | Toggle World filtering ON/OFF; suitable for an in-game macro |
+| `/wcf custom` | Open blocked-player and blocked-phrase manager |
+| `/wcf custom on` / `/wcf custom off` | Enable / disable personal lists |
+| `/wcf block player NAME` / `/wcf unblock player NAME` | Manage a blocked World player |
+| `/wcf block text PHRASE` | Block a case-insensitive text substring in World |
+| `/wcf block word PHRASE` | Block a word/phrase with word-boundary matching |
+| `/wcf unblock text PHRASE` | Remove a blocked word or phrase |
 | `/wcf stats` | Toggle the statistics panel |
 | `/wcf on` / `/wcf off` | Enable / disable filtering |
 | `/wcf status` | Print current filter status and counts |

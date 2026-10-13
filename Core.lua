@@ -29,6 +29,9 @@ local defaults = {
   filterGuild = true,
   filterServices = true,
   filterRepeats = true,
+  customEnabled = true,
+  blockedPlayers = {},
+  blockedPhrases = {},
   sensitivity = "balanced",
   debug = false,
   minimapAngle = 225,
@@ -58,6 +61,7 @@ function WCF.Initialize()
     WorldChatFilterDB.sensitivity = "balanced"
   end
   WCF.db = WorldChatFilterDB
+  if WCF.InitializeCustomFilters then WCF.InitializeCustomFilters() end
   if WCF.InitializeStats then WCF.InitializeStats() end
 end
 
@@ -96,6 +100,9 @@ function WCF.Help()
   WCF.Print("/wcf test <message> = explain classification | /wcf debug = toggle block reasons")
   WCF.Print("/wcf mode careful|balanced|aggressive = set detection sensitivity")
   WCF.Print("/wcf stats = show session and all-time statistics")
+  WCF.Print("/wcf custom = open personal World-only block lists")
+  WCF.Print("/wcf block player <name> | /wcf unblock player <name>")
+  WCF.Print("/wcf block text <phrase> | /wcf block word <word> | /wcf unblock text <phrase>")
   WCF.Print("/wcf channeldebug = log channel metadata (not message contents) for diagnosis")
   WCF.Print("/wcf color on|off|picker|reset = World chat color options")
   WCF.Print("This addon NEVER joins/leaves channels or moderates other players.")
@@ -119,6 +126,37 @@ SlashCmdList["WORLDCHATFILTER"] = function(raw)
     if WCF.ToggleStatsUI then WCF.ToggleStatsUI() end
   elseif command == "status" then
     WCF.Status()
+  elseif command == "custom" then
+    if not WCF.db then WCF.Initialize() end
+    local setting = string.lower(trim(rest))
+    if setting == "on" or setting == "off" then
+      WCF.db.customEnabled = (setting == "on")
+      if WCF.InvalidateMessageCache then WCF.InvalidateMessageCache() end
+      if WCF.RefreshCustomFiltersUI then WCF.RefreshCustomFiltersUI() end
+      WCF.Print("Custom World filters: " .. (WCF.db.customEnabled and "ON" or "OFF"))
+    elseif setting == "" then
+      if WCF.ToggleCustomFiltersUI then WCF.ToggleCustomFiltersUI() end
+    else
+      WCF.Print("Usage: /wcf custom [on|off]")
+    end
+  elseif command == "block" or command == "unblock" then
+    if not WCF.db then WCF.Initialize() end
+    local _, _, kind, target = string.find(rest, "^(%S+)%s+(.+)$")
+    kind = kind and string.lower(kind) or nil
+    if not kind or not target or (kind ~= "player" and kind ~= "text" and kind ~= "word") then
+      WCF.Print("Usage: /wcf block player <name> | /wcf block text|word <phrase> | /wcf unblock player|text <value>")
+    else
+      local ok, value
+      if kind == "player" then
+        if command == "block" then ok, value = WCF.AddBlockedPlayer(target)
+        else ok = WCF.RemoveBlockedPlayer(target); value = target end
+      else
+        if command == "block" then ok, value = WCF.AddBlockedPhrase(target, kind == "word")
+        else ok = WCF.RemoveBlockedPhrase(target); value = target end
+      end
+      WCF.Print((ok and (command == "block" and "Blocked: " or "Unblocked: ") or
+                 "Custom filter: ") .. (ok and tostring(value) or tostring(value or "Entry not found.")))
+    end
   elseif command == "on" or command == "off" or command == "toggle" then
     if not WCF.db then WCF.Initialize() end
     -- Macro-friendly toggle reuses the normal ON/OFF behavior, including
@@ -182,10 +220,12 @@ initFrame:SetScript("OnEvent", function()
   if event == "VARIABLES_LOADED" then
     WCF.Initialize()
     if WCF.BuildUI then WCF.BuildUI() end
+    if WCF.InstallCustomPlayerPopup then WCF.InstallCustomPlayerPopup() end
   elseif event == "PLAYER_ENTERING_WORLD" then
     if not WCF.db then WCF.Initialize() end
     -- Other addons can replace the default chat handler during login.
     if WCF.InstallChatHook then WCF.InstallChatHook() end
+    if WCF.InstallCustomPlayerPopup then WCF.InstallCustomPlayerPopup() end
     if WCF.RefreshWorldColor then WCF.RefreshWorldColor() end
   end
 end)

@@ -1,13 +1,13 @@
 -- WorldChatFilter v0.3 beta statistics (Vanilla Lua 5.0 compatible).
 -- Counters are updated only for messages actually hidden in /World.
 local WCF = WorldChatFilter
-local categories = {"Trade", "LFG", "Guild", "Services", "Repeats"}
+local categories = {"Trade", "LFG", "Guild", "Services", "Repeats", "Custom"}
 local session = nil
 local statsFrame, cells, resetAllButton
 local confirmReset = false
 
 local function freshCounts()
-  return {total = 0, Trade = 0, LFG = 0, Guild = 0, Services = 0, Repeats = 0}
+  return {total = 0, Trade = 0, LFG = 0, Guild = 0, Services = 0, Repeats = 0, Custom = 0}
 end
 
 local function normalizeCounts(value)
@@ -37,7 +37,7 @@ end
 
 function WCF.RecordHiddenMessage(category)
   local current, lifetime = WCF.GetStats()
-  if category ~= "Trade" and category ~= "LFG" and category ~= "Guild" and category ~= "Services" then
+  if category ~= "Trade" and category ~= "LFG" and category ~= "Guild" and category ~= "Services" and category ~= "Custom" then
     category = "Repeats"
   end
   current.total = current.total + 1
@@ -88,7 +88,7 @@ function WCF.BuildStatsUI()
   if statsFrame then return statsFrame end
   local f = CreateFrame("Frame", "WorldChatFilterStatisticsFrame", UIParent)
   f:SetWidth(440)
-  f:SetHeight(360)
+  f:SetHeight(392)
   f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
   f:SetFrameStrata("DIALOG")
   f:SetMovable(true)
@@ -127,10 +127,10 @@ function WCF.BuildStatsUI()
     }
   end
 
-  label(f, "GameFontNormal", "TOTAL HIDDEN", 29, -261, 168)
+  label(f, "GameFontNormal", "TOTAL HIDDEN", 29, -299, 168)
   cells.total = {
-    label(f, "GameFontNormal", "0", 220, -261, 75, "RIGHT"),
-    label(f, "GameFontNormal", "0", 321, -261, 80, "RIGHT")
+    label(f, "GameFontNormal", "0", 220, -299, 75, "RIGHT"),
+    label(f, "GameFontNormal", "0", 321, -299, 80, "RIGHT")
   }
 
   local sessionButton = CreateFrame("Button", "WorldChatFilterResetSession", f, "UIPanelButtonTemplate")
