@@ -26,6 +26,7 @@ function UIDropDownMenu_CreateInfo() return {} end
 function UIDropDownMenu_AddButton(info, level) table.insert(menuEntries,{level=level,info=info}) end
 function CloseDropDownMenus() end
 function ToggleDropDownMenu() end
+function getglobal(name) return _G[name] end
 UIParent = {}
 local Frame={}
 Frame.__index=Frame
@@ -57,12 +58,12 @@ local W = WorldChatFilter
 W.Initialize()
 assert(W.VERSION == '1.0.0')
 assert(W.db.minimapAngle == 235)
-assert(W.GetWorldColorPreset() == 'warmstone')
-assert(W.GetWorldColorHex() == '#C9B8A2')
+assert(W.GetWorldColorPreset() == 'gold')
+assert(W.GetWorldColorHex() == '#D1B77F')
 assert(#W.COLOR_PRESETS == 4)
 -- Core original color and World-only safeguard
 W.RefreshWorldColor()
-assert(colorEq(ChatTypeInfo.CHANNEL4,201/255,184/255,162/255))
+assert(colorEq(ChatTypeInfo.CHANNEL4,209/255,183/255,127/255))
 assert(colorEq(ChatTypeInfo.CHANNEL2,old.r,old.g,old.b))
 -- Preset change live
 assert(W.SelectWorldColorPreset('sage'))
@@ -116,8 +117,8 @@ assert(colorEq(ChatTypeInfo.CHANNEL5,old.r,old.g,old.b))
 W.db.tintWorld=true;W.RefreshWorldColor()
 assert(colorEq(ChatTypeInfo.CHANNEL5,184/255,169/255,206/255))
 W.ResetWorldColorSelection()
-assert(W.GetWorldColorHex()=='#C9B8A2')
-assert(colorEq(ChatTypeInfo.CHANNEL5,201/255,184/255,162/255))
+assert(W.GetWorldColorHex()=='#D1B77F')
+assert(colorEq(ChatTypeInfo.CHANNEL5,209/255,183/255,127/255))
 -- Category classifier unchanged; same ad in Trade bypasses and cannot recolor.
 local ad='LFM1 dd (no rogue) DMW'
 local _,_,_,block=W.ClassifyMessage(ad)
@@ -159,9 +160,9 @@ local custom=menuFind(2,'worldColor','Choose Custom Color...')
 custom.func()
 ColorPickerFrame:SetColorRGB(0.22,0.88,0.3)
 assert(W.GetWorldColorPreset()=='custom')
-local reset=menuFind(2,'worldColor','Reset to Warm Stone')
+local reset=menuFind(2,'worldColor','Reset to Dusty Gold')
 reset.func()
-assert(W.GetWorldColorHex()=='#C9B8A2')
+assert(W.GetWorldColorHex()=='#D1B77F')
 local toggle=menuFind(2,'worldColor','Enable Custom World Color')
 toggle.func()
 assert(W.db.tintWorld==false)
@@ -169,7 +170,7 @@ assert(colorEq(ChatTypeInfo.CHANNEL5,old.r,old.g,old.b))
 assert(colorEq(ChatTypeInfo.CHANNEL2,old.r,old.g,old.b))
 -- color on/off slash command
 SlashCmdList.WORLDCHATFILTER('color on')
-assert(W.db.tintWorld and colorEq(ChatTypeInfo.CHANNEL5,201/255,184/255,162/255))
+assert(W.db.tintWorld and colorEq(ChatTypeInfo.CHANNEL5,209/255,183/255,127/255))
 SlashCmdList.WORLDCHATFILTER('color off')
 assert(not W.db.tintWorld and colorEq(ChatTypeInfo.CHANNEL5,old.r,old.g,old.b))
 print('PASS - version, presets, saved color, cancel, live tint, no opacity, submenu/UI, slash, World isolation, Trade untouched')

@@ -14,6 +14,8 @@ function CreateFrame(kind, name)
   function f:SetPoint(a, b, c, d, e)
     self.lastPoint = {a, b, c, d, e}
   end
+  -- Vanilla CreateFrame exposes a globally named frame via _G[name].
+  if name then _G[name] = f end
   return f
 end
 function getglobal(name) return _G[name] end
