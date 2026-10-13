@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Detect `LF` immediately followed by a linked enchant/recipe (`LF[Enchant Weapon - Spell Power]`), with or without spaces/counts; support native enchant/spell/item/tradeskill hyperlinks. Keep crafting links under Services rather than Trade and allow normal link discussions.
+
 - Recognize leading `LF` with or without a number plus class/role/spec or dungeon/raid/BG, including Vanilla and Turtle WoW full names/abbreviations (`LF4 RAZORFEN KRAUL`, `LF RFK`).
 - Regression tests for optional counts, ordinary chat and World-channel isolation.
 

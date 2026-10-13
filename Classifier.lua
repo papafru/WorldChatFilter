@@ -1025,8 +1025,45 @@ local function guild(text, lower, message)
   return r
 end
 
+-- Detect direct LF + linked crafting recipe, including LF[Enchant ...] with
+-- NO whitespace. Also understands native Vanilla craft hyperlinks like
+-- |Henchant:, plus profession spell/tradeskill links with a craft-style title.
+-- Item/quest/spell links and bracketed text alone are never blanket-blocked.
+local lfCraftPrefixes = {
+  "enchant", "enchanting", "formula", "recipe", "pattern", "plans",
+  "plan", "schematic", "schematics", "design", "technique", "manual",
+  "transmute", "alchemy", "blacksmithing", "tailoring", "leatherworking",
+  "engineering", "jewelcrafting", "inscription", "cooking", "first aid"
+}
+local function isLeadingLfCraftLink(message)
+  if type(message) ~= "string" or
+      not string.find(message, "^%s*[Ll][Ff]") then return false end
+  local display = stripMarkup(message)
+  -- LF[recipe], LF [recipe], LF2[recipe], LF 2 [recipe].
+  local _, _, count, tail = string.find(display, "^%s*[Ll][Ff]%s*(%d*)%s*(.*)$")
+  if not tail or (count ~= "" and tonumber(count) and tonumber(count) <= 0) then
+    return false
+  end
+  local _, endBracket = string.find(tail, "^%b[]")
+  if not endBracket then return false end
+  local label = normalize(string.sub(tail, 2, endBracket - 1))
+  -- Enchant links identify crafting spells even when their display text
+  -- contains no explicit profession keyword.
+  if string.find(message, "|Henchant:", 1, true) or
+      string.find(message, "|Htrade:", 1, true) or
+      string.find(message, "|Htradeskill:", 1, true) then return true end
+  local i
+  for i=1,table.getn(lfCraftPrefixes) do
+    local prefix = " " .. lfCraftPrefixes[i] .. " "
+    if string.sub(label, 1, string.len(prefix)) == prefix then return true end
+  end
+  return false
+end
+
 local function trade(text, lower, message)
   local r = newResult("Trade")
+  -- Crafting requests belong to Services, even if they use an item hyperlink.
+  if isLeadingLfCraftLink(message) then return r end
   local shorthand = any(text, {"wts","wtb","wtt","wtbts","wtsg","wtbg"})
   local buySell = any(text, {"selling","buying","trading","sell","buy","trade","auctioning"})
   local goods = any(text, merchandise)
@@ -1073,7 +1110,7 @@ local function trade(text, lower, message)
   -- with no long prose/question following it; arbitrary "LF" alone is safe.
   -- Works with WoW item links after stripMarkup, without any item-name list.
   local display = stripMarkup(message)
-  local _, linkEnd = string.find(display, "^%s*[Ll][Ff]%s+%b[]")
+  local _, linkEnd = string.find(display, "^%s*[Ll][Ff]%s*%b[]")
   local shortItemRequest = false
   if linkEnd then
     local tail = string.sub(display, linkEnd + 1)
@@ -1101,6 +1138,7 @@ end
 
 local function service(text, lower, message)
   local r = newResult("Services")
+  local lfCraftLink = isLeadingLfCraftLink(message)
   local lfwToken = contains(text, "lfw")
   -- "LFW", "LF WORK" and "Looking for work" are equivalent, regardless
   -- of where they occur (e.g. "Goldsmith LF work [item]").
@@ -1245,12 +1283,13 @@ local function service(text, lower, message)
   -- A leading LF + named profession is a direct request even when phrased
   -- as a brief question (LF JC?). Unlike a question ABOUT an LF phrase,
   -- its message starts with the actual request.
-  r.ignoreQuestionPenalty = (lfw or bareProfession or wantedProfession) and not workDiscussion
-  r.intent = (lfw and not workDiscussion) or bareProfession or professionOffer or
+  r.ignoreQuestionPenalty = lfCraftLink or ((lfw or bareProfession or wantedProfession) and not workDiscussion)
+  r.intent = lfCraftLink or (lfw and not workDiscussion) or bareProfession or professionOffer or
              (job and offer and (request or price or lfw)) or
              (serviceName and offer and (request or price or any(text,{"service","services","wts","selling"}))) or
              professionRequest or materialsRequest or summonDirectory or summonOffer or taxiOffer
   if not r.intent then return r end
+  if lfCraftLink then add(r, 15, "LF + linked crafting/enchant recipe") end
   if lfw and not workDiscussion then
     add(r, 13, "LFW / LF WORK profession work advertisement")
   end
