@@ -42,6 +42,46 @@ local function addToggle(text, key, level)
   end, db[key] and true or false)
 end
 
+-- Vanilla 1.12 normally opens level-3 dropdowns to the right of level 2.
+-- When World Chat Color already opened to the left, that would cover level 1.
+-- Reposition ONLY this addon's Color Presets submenu after the native click/hover.
+local function hookPresetsOpenLeft()
+  local parentList = getglobal("DropDownList2")
+  if not parentList then return end
+  local button = getglobal("DropDownList2Button" .. tostring(parentList.numButtons or 0))
+  if not button or button.wcfPresetLeftHooked then return end
+  button.wcfPresetLeftHooked = true
+
+  local function positionOnLeft()
+    if not menu or UIDROPDOWNMENU_OPEN_MENU ~= menu:GetName() or
+       button.value ~= "colorPresets" then return end
+    local childList = getglobal("DropDownList3")
+    if not childList or not childList:IsShown() then return end
+    childList:ClearAllPoints()
+    childList:SetPoint("TOPRIGHT", button, "TOPLEFT", -11, 14)
+    -- Retain Vanilla's vertical correction if the submenu is too low.
+    local bottom = childList:GetBottom()
+    if bottom and bottom < 0 then
+      childList:ClearAllPoints()
+      childList:SetPoint("BOTTOMRIGHT", button, "BOTTOMLEFT", -11, -14)
+    end
+  end
+
+  local function hookScript(frame, script)
+    if not frame then return end
+    local nativeScript = frame:GetScript(script)
+    frame:SetScript(script, function()
+      if nativeScript then nativeScript() end
+      positionOnLeft()
+    end)
+  end
+
+  hookScript(button, "OnEnter")
+  local arrow = getglobal(button:GetName() .. "ExpandArrow")
+  hookScript(arrow, "OnEnter")
+  hookScript(arrow, "OnClick")
+end
+
 local function populateMenu(self, level)
   -- Vanilla passes submenu selection through the global value variable.
   level = level or UIDROPDOWNMENU_MENU_LEVEL or 1
@@ -70,10 +110,11 @@ local function populateMenu(self, level)
       addTitle("World Chat Color", level)
       addToggle("Enable Custom World Color", "tintWorld", level)
       addItem("Color Presets", level, nil, nil, true, "colorPresets")
+      hookPresetsOpenLeft()
       addItem("Choose Custom Color...", level, function()
         if WCF.OpenWorldColorPicker then WCF.OpenWorldColorPicker() end
       end)
-      addItem("Reset to Warm Stone", level, function()
+      addItem("Reset to Dusty Gold", level, function()
         if WCF.ResetWorldColorSelection then WCF.ResetWorldColorSelection() end
       end)
       addTitle("Selected: " .. WCF.GetWorldColorLabel(), level)

@@ -16,7 +16,7 @@
 - **Language-aware guild detection:** Curated signals from multiple languages and some transliterations. No guild names or player names are blacklisted.
 - **Sensitivity:** **Careful**, **Balanced** (default), or **Aggressive**.
 - **Blizzard-style settings:** Dropdown menu with toggles, a circular minimap icon, and **Shift + drag** to reposition it.
-- **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Warm Stone** (`#C9B8A2`). The tint is local and can be disabled.
+- **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
 - **Statistics:** Session and all-time hidden-message counts by category, saved per character.
 - **Diagnostics:** Explain sample classifications and troubleshoot channel identification.
 - **No dependencies:** Works without SocialChat or external libraries.
@@ -50,17 +50,17 @@ Click the minimap icon or type `/wcf`. Available controls include:
 
 - Enable/disable filtering and individual categories.
 - Choose **Careful**, **Balanced**, or **Aggressive** detection.
-- Open the **World Chat Color** submenu to enable the tint, choose a preset, open **Choose Custom Color...**, or reset to **Warm Stone**.
+- Open the **World Chat Color** submenu to enable the tint, choose a preset, open **Choose Custom Color...**, or reset to **Dusty Gold**.
 - Open the **Statistics** panel and reset session/all-time counters.
 
 Preset colors:
 
 | Preset | Color |
 | --- | --- |
-| Warm Stone (default) | `#C9B8A2` |
+| Warm Stone | `#C9B8A2` |
 | Soft Sage | `#A9BDA5` |
 | Muted Lavender | `#B8A9CE` |
-| Dusty Gold | `#D1B77F` |
+| Dusty Gold (default) | `#D1B77F` |
 
 The color is applied to **new World messages only**, not previously displayed lines. When filtering or the tint is disabled, the addon restores the previous channel color while it is running. It does not write a new global chat color preference. Other chat-color addons may conflict.
 
@@ -77,7 +77,7 @@ The color is applied to **new World messages only**, not previously displayed li
 | `/wcf mode aggressive` | Higher detection sensitivity |
 | `/wcf color on` / `/wcf color off` | Enable / disable World chat tint |
 | `/wcf color picker` | Open the RGB Color Picker |
-| `/wcf color reset` | Restore the Warm Stone preset |
+| `/wcf color reset` | Restore the Dusty Gold preset |
 | `/wcf test <message>` | Explain the decision for a sample message |
 | `/wcf debug` | Toggle classification reasons in chat |
 | `/wcf channeldebug` | Toggle channel metadata diagnostics |

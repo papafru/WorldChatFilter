@@ -12,7 +12,7 @@ local presets = {
   {id = "gold",      label = "Dusty Gold",    r = 209/255, g = 183/255, b = 127/255},
 }
 WCF.COLOR_PRESETS = presets
-WCF.DEFAULT_COLOR_PRESET = "warmstone"
+WCF.DEFAULT_COLOR_PRESET = "gold"
 
 local function clamp(value, fallback)
   value = tonumber(value)
@@ -25,7 +25,7 @@ end
 local function copyRGB(rgb)
   if type(rgb) ~= "table" then return nil end
   if type(rgb.r) ~= "number" or type(rgb.g) ~= "number" or type(rgb.b) ~= "number" then return nil end
-  return {r = clamp(rgb.r, 201/255), g = clamp(rgb.g, 184/255), b = clamp(rgb.b, 162/255)}
+  return {r = clamp(rgb.r, 209/255), g = clamp(rgb.g, 183/255), b = clamp(rgb.b, 127/255)}
 end
 
 local function findPreset(id)
@@ -61,7 +61,7 @@ function WCF.GetWorldColorLabel()
   local preset = WCF.GetWorldColorPreset()
   if preset == "custom" then return "Custom" end
   local entry = findPreset(preset)
-  return entry and entry.label or "Warm Stone"
+  return entry and entry.label or "Dusty Gold"
 end
 
 function WCF.GetWorldColorHex()

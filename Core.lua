@@ -33,7 +33,7 @@ local defaults = {
   debug = false,
   minimapAngle = 225,
   tintWorld = true, -- optional World-only color override
-  worldColorPreset = "warmstone", -- #C9B8A2
+  worldColorPreset = "gold", -- Dusty Gold (#D1B77F)
   worldColorCustom = {}, -- RGB (0..1) saved per character
 }
 
@@ -136,7 +136,7 @@ SlashCmdList["WORLDCHATFILTER"] = function(raw)
       if WCF.OpenWorldColorPicker then WCF.OpenWorldColorPicker() end
     elseif rest == "reset" or rest == "default" then
       if WCF.ResetWorldColorSelection then WCF.ResetWorldColorSelection() end
-      WCF.Print("World color preset: Warm Stone (#C9B8A2)")
+      WCF.Print("World color preset: Dusty Gold (#D1B77F)")
     else
       WCF.Print("Usage: /wcf color on|off|picker|reset (or /wcf -> World Chat Color)")
     end
