@@ -8,11 +8,23 @@ The compact Blizzard-style settings menu contains filter categories, detection s
 
 ![Main settings, World Chat Color submenu and RGB color picker](screenshots/color-picker-settings-overview.webp)
 
-## Statistics panel
+## Statistics panel (v1.1)
 
-A session and all-time breakdown of messages hidden from the **World** channel: Trade advertisements, LFG, guild recruitment, services and repeats. The counters are per character; reset buttons allow a session or full reset.
+Session and all-time hidden-message counts for World chat: Trade, LFG, Guild, Services, Repeated Messages, and Custom. Reset All includes an in-window confirmation.
 
-![World Chat Filter statistics by category and total](screenshots/statistics-panel.webp)
+![World Chat Filter v1.1 — Statistics](https://github.com/user-attachments/assets/add029db-3b51-4314-ac73-b3b95dc4d2a2)
+
+## Custom Filters panel (v1.1)
+
+Manage personal Blocked Players and Words & Phrases with a consistent Dark Arcane Blizzard interface, without using WoW's global ignore list.
+
+![World Chat Filter v1.1 — Custom Filters](https://github.com/user-attachments/assets/fe01b6ef-b251-4957-bba9-f9e921b7f0db)
+
+## Help / Commands panel (v1.1)
+
+Browse the real supported slash commands on General, Custom Filters and Tools tabs by typing `/wcf help`.
+
+![World Chat Filter v1.1 — Help and Commands](https://github.com/user-attachments/assets/47ffc44a-dbf4-45e6-8d36-74155da7e2c3)
 
 ## Information menu
 

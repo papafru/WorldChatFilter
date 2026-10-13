@@ -111,19 +111,31 @@ Please redact player names and private information from screenshots before openi
 
 ## Screenshots
 
-### Minimap button
+Three screenshots of the actual **v1.1 Dark Arcane Blizzard** interface on OctoWoW 1.18.
 
-A compact minimap button for quick access to the filter settings.
+### Custom Filters
 
-![World Chat Filter circular minimap button](docs/screenshots/minimap-icon.webp)
+Blocked Players and Words & Phrases, with partial/whole-word matching and a World-only block list.
 
-### Settings menu
+![World Chat Filter v1.1 — Custom Filters](https://github.com/user-attachments/assets/fe01b6ef-b251-4957-bba9-f9e921b7f0db)
 
-A lightweight, Blizzard-style dropdown for filter categories, detection sensitivity, chat colors and statistics.
+### Statistics
+
+Per-character category, session and all-time counts, including Custom filters.
+
+![World Chat Filter v1.1 — Statistics](https://github.com/user-attachments/assets/add029db-3b51-4314-ac73-b3b95dc4d2a2)
+
+### Help / Commands
+
+A searchable-by-tab in-game guide to the supported slash commands.
+
+![World Chat Filter v1.1 — Help and Commands](https://github.com/user-attachments/assets/47ffc44a-dbf4-45e6-8d36-74155da7e2c3)
+
+### Minimap and settings
+
+![World Chat Filter minimap icon](docs/screenshots/minimap-icon.webp)
 
 ![World Chat Filter settings menu](docs/screenshots/settings-menu.webp)
-
-
 
 ## Contributing and license
 

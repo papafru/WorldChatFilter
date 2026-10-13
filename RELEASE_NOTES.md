@@ -16,9 +16,26 @@ Keep a per-character list of players whose messages you do not want to see in Wo
 Add case-insensitive filters for words and phrases with **Partial match** or **Whole word** matching. Manage entries in the new **Blocked Players / Words & Phrases** interface with one input, two tabs, pagination, and per-entry Remove controls. Edit or disable custom filtering without affecting the main automatic ad classifier.
 
 ### Unified Dark Arcane Blizzard interface
-- **Custom Filters:** A compact two-tab manager with dark slate and bronze controls, subtle hover effects, muted green ON state, Dusty Gold highlights, and an opaque backdrop.
-- **Statistics:** Restyled category/session/all-time counts, including a dedicated **Custom** category. Reset All uses an in-window confirmation instead of printing prompts in chat.
-- **Help / Commands:** A new in-game reference window with **General**, **Custom Filters**, and **Tools** tabs. Use `/wcf help` or Settings → Help / Commands to open it; the command list is no longer spammed into chat.
+
+All three panels share the dark slate-and-bronze style, subtle hover effects, Dusty Gold highlights and a more opaque backdrop.
+
+#### Custom Filters
+
+A compact manager with **Blocked Players** / **Words & Phrases** tabs, an Enabled control, pagination, Remove buttons and Partial / Whole word matching.
+
+<img src="https://github.com/user-attachments/assets/fe01b6ef-b251-4957-bba9-f9e921b7f0db" width="650" alt="World Chat Filter v1.1 — Custom Filters window in OctoWoW" />
+
+#### Statistics
+
+Session and all-time hidden-message counts, including the new **Custom** category. Reset All asks for confirmation inside the window.
+
+<img src="https://github.com/user-attachments/assets/add029db-3b51-4314-ac73-b3b95dc4d2a2" width="650" alt="World Chat Filter v1.1 — Statistics window in OctoWoW" />
+
+#### Help / Commands
+
+The new in-game command reference has **General**, **Custom Filters** and **Tools** tabs. Open it with `/wcf help` or via the settings menu.
+
+<img src="https://github.com/user-attachments/assets/47ffc44a-dbf4-45e6-8d36-74155da7e2c3" width="760" alt="World Chat Filter v1.1 — Help and Commands window in OctoWoW" />
 
 ### Useful commands
 
