@@ -2,6 +2,7 @@
 
 ## 1.1.0-dev — In progress
 
+- Fix missed Polish guild recruitment combining `szuka osób` / `szukamy graczy`, a guild tag or team identifier, and gameplay context such as MC or `do wspólnej gry`. Handle accented/unaccented Polish; add discussion, World-only and toggle regressions without named-guild blacklists.
 - Fix missed Swedish guild invitations with a `<Guild>` tag, **alla är välkomna**, and activities such as *levla, chilla, raida*. Require multiple invitation and gameplay signals, with quotation/discussion safeguards; fold Swedish å/Å. Do not blacklist any guild or player names. Added false-positive and World-only regressions.
 - Restyle the Statistics panel with the Dark Arcane theme, unified bronze controls, clean counters and in-panel two-step reset confirmation (no chat spam).
 - Add a Help / Commands panel with General, Custom Filters and Tools tabs, real supported slash commands and usage tips. `/wcf help` and the existing settings-menu entry now open the panel instead of printing commands in chat.

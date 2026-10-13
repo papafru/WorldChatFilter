@@ -656,6 +656,39 @@ local function guild(text, lower, message)
       (raid or roster or
        (noun and swPromo) or (guildTag and swActivity)) and
       not swDiscussion
+
+  -- Polish recruitment: require player search/invitation + named group +
+  -- independent WoW gameplay context. No blacklisted guild or player names.
+  local plSearch = any(text, {"szuka", "szukamy", "szukaja", "poszukuje",
+      "poszukujemy", "poszukuja", "rekrutuje", "rekrutujemy",
+      "rekrutuja", "przyjmujemy", "nabor"})
+  local plPeople = any(text, {"osob", "osoby", "graczy", "gracza",
+      "ludzi", "czlonkow", "czlonka", "raiderow", "raidera",
+      "aktywnych", "chetnych", "healerow", "tankow"})
+  local plTeam = any(text, {"gildia", "gildii", "druzyna", "druzyny",
+      "ekipa", "ekipy", "klan", "klanu", "spolecznosc"})
+  local plInvite = any(text, {"zapraszamy", "zaprasza", "dolacz",
+      "dolaczcie", "dolaczaj", "wstap", "wstapcie"}) or
+      somePhrase(text, {"dolacz do nas", "gramy razem"})
+  local plGame = raid or
+      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
+          "pve", "pvp", "progres", "progress", "dungeony",
+          "levelowanie", "expienie", "loot", "sr"}) or
+      somePhrase(text, {"wspolnej gry", "wspolne granie",
+          "wspolnego grania", "wspolny progres", "wspolna gra",
+          "na rajdy", "na raidy", "na mc", "na bwl"})
+  -- Exclude quoted adverts, translation questions and reports about guilds.
+  local plDiscussion = somePhrase(text, {"co znaczy", "co oznacza",
+      "co to znaczy", "co myslicie", "kto wie", "jaka to gildia",
+      "slyszalem ze", "slyszalam ze", "czytalem ze",
+      "czytalam ze", "ktos powiedzial", "widziales ze",
+      "widzieliscie ze", "wczoraj", "kiedys", "cytuje",
+      "pytam tylko", "pytanie o", "mowili ze"}) or
+      string.find(text, "^ czy ") ~= nil
+  local plRecruitment = (guildTag or plTeam or noun) and plGame and
+      ((plSearch and plPeople) or (plInvite and (guildTag or plTeam))) and
+      not plDiscussion
+
   -- Latin-script Russian recruitment: common spellings vary (ishet/ishchet,
   -- ishem/ischem, sobiraem/sobirayem, ...).  This is a COMBINATION rule,
   -- not a blacklist of specific messages or guild names. Require a search
@@ -924,7 +957,7 @@ local function guild(text, lower, message)
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
-      csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
+      csRecruitment or softRecruitment or swRecruitment or plRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
@@ -1008,6 +1041,12 @@ local function guild(text, lower, message)
     if guildTag then add(r, 2, "guild tag with Swedish invitation") end
     if swActivity then add(r, 3, "Swedish gameplay/raid activity") end
     if swPromo then add(r, 2, "Swedish promotional context") end
+  end
+  if plRecruitment then
+    add(r, 12, "Polish guild/team recruiting players for gameplay")
+    if plSearch and plPeople then add(r, 3, "Polish player/member search") end
+    if plTeam or guildTag then add(r, 2, "Polish guild/team identity") end
+    if plInvite then add(r, 2, "Polish invitation") end
   end
   if csRecruitment then
     if csSearch then add(r, 4, "Czech/Slovak recruitment intent") end
