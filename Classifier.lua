@@ -1110,7 +1110,7 @@ local function trade(text, lower, message)
   -- with no long prose/question following it; arbitrary "LF" alone is safe.
   -- Works with WoW item links after stripMarkup, without any item-name list.
   local display = stripMarkup(message)
-  local _, linkEnd = string.find(display, "^%s*[Ll][Ff]%s*%b[]")
+  local _, linkEnd = string.find(display, "^%s*[Ll][Ff]%s+%b[]")
   local shortItemRequest = false
   if linkEnd then
     local tail = string.sub(display, linkEnd + 1)

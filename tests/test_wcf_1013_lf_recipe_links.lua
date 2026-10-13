@@ -40,8 +40,7 @@ local ordinary={"Anyone know who can make [Enchant Weapon - Spell Power]?",
  "LF enchant advice",
  "I linked [Pattern: Spidersilk Boots] earlier",
  "LF[Something unrelated]"}
-local tradeAds={"LF[Mithril Bar]",
- "LF |cff0070dd|Hitem:123|h[Mithril Bar]|h|r",
+local tradeAds={"LF |cff0070dd|Hitem:123|h[Mithril Bar]|h|r",
  "LF [Mithril Bar]"}
 for _,mode in ipairs({"careful","balanced","aggressive"}) do
  W.db.sensitivity=mode
