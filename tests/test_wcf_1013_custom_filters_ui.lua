@@ -1,11 +1,13 @@
--- Vanilla UI mocks: end-to-end custom manager, dropdown and saved entries.
-table.getn=table.getn or function(t) return #t end
-SlashCmdList={}
-DEFAULT_CHAT_FRAME={AddMessage=function() end}
+-- Vanilla 1.12 two-tab Custom Filters GUI regression.
+-- Mock the existing Blizzard TabButtonTemplate / PanelTemplates contract.
+table.getn = table.getn or function(t) return #t end
+SlashCmdList = {}
+DEFAULT_CHAT_FRAME = {AddMessage=function() end}
 function UnitName() return "Tester" end
 local frames={}
-local function mock(kind,name,parent)
-  local f={kind=kind, name=name, parent=parent, scripts={}, text="",visible=true,enabled=true}
+local function mock(kind,name,parent,template)
+  local f={kind=kind,name=name,parent=parent,template=template,scripts={},
+           text="",visible=true,enabled=true}
   function f:GetName() return self.name end
   function f:SetPoint(...) self.point={...} end
   function f:SetWidth(x) self.width=x end
@@ -22,16 +24,22 @@ local function mock(kind,name,parent)
   function f:RegisterForDrag() end
   function f:RegisterEvent() end
   function f:SetFrameStrata() end
-  function f:SetBackdrop() end
+  function f:SetBackdrop(x) self.backdrop=x end
+  function f:SetBackdropColor(r,g,b,a) self.backdropColor={r,g,b,a} end
   function f:SetAutoFocus() end
-  function f:SetMaxLetters() end
+  function f:SetMaxLetters(x) self.maxLetters=x end
   function f:ClearFocus() self.unfocused=true end
   function f:SetScript(name,fn) self.scripts[name]=fn end
   function f:GetScript(name) return self.scripts[name] end
+  function f:SetTexture(value) self.texture=value end
+  function f:SetVertexColor(r,g,b,a) self.vertex={r,g,b,a} end
   function f:CreateFontString()
     local result=mock("FontString",nil,self)
     function result:SetJustifyH() end
     return result
+  end
+  function f:CreateTexture()
+    return mock("Texture",nil,self)
   end
   function f:StartMoving() end
   function f:StopMovingOrSizing() end
@@ -40,7 +48,7 @@ local function mock(kind,name,parent)
   return f
 end
 UIParent=mock("Frame","UIParent",nil)
-function CreateFrame(kind,name,parent) return mock(kind,name,parent) end
+function CreateFrame(kind,name,parent,template) return mock(kind,name,parent,template) end
 function getglobal(name) return _G[name] end
 local entries,closed={},0
 function UIDropDownMenu_CreateInfo() return {} end
@@ -49,6 +57,14 @@ function UIDropDownMenu_AddButton(info,level)
 end
 function UIDropDownMenu_Initialize(frame,fn) frame.initialize=fn end
 function CloseDropDownMenus() closed=closed+1 end
+local resized={}
+function PanelTemplates_TabResize(_,tab,width) resized[tab:GetName()]=width end
+function PanelTemplates_SetNumTabs(frame,n) frame.numTabs=n end
+function PanelTemplates_SetTab(frame,id)
+  assert(frame.numTabs==2 and id>=1 and id<=2,"bad native tab index")
+  frame.selectedTab=id
+end
+
 WorldChatFilterDB=nil
 for _,name in ipairs({"Core.lua","CustomFilters.lua","CustomFiltersUI.lua","UI.lua"}) do dofile(name) end
 local W=WorldChatFilter
@@ -57,82 +73,123 @@ W.BuildUI()
 assert(WorldChatFilterSettingsDropdown.initialize,"settings menu missing")
 entries={}
 WorldChatFilterSettingsDropdown.initialize(nil,1)
-local menuItem=nil
-for _,entry in ipairs(entries) do
- if entry.info.text=="Custom Filters" then menuItem=entry.info end
+local menuItem
+for _,item in ipairs(entries) do
+ if item.info.text=="Custom Filters" then menuItem=item.info end
 end
 assert(menuItem and menuItem.hasArrow and menuItem.value=="custom","missing Custom Filters submenu")
 entries={}
 UIDROPDOWNMENU_MENU_VALUE="custom"
 WorldChatFilterSettingsDropdown.initialize(nil,2)
-local enabled,manager=nil,nil
-for _,entry in ipairs(entries) do
- if entry.info.text=="Enable Custom Filters" then enabled=entry.info end
- if entry.info.text=="Manage Blocked Players & Phrases..." then manager=entry.info end
+local enabled,manager
+for _,item in ipairs(entries) do
+ if item.info.text=="Enable Custom Filters" then enabled=item.info end
+ if item.info.text=="Manage Blocked Players & Phrases..." then manager=item.info end
 end
-assert(enabled and manager and type(manager.func)=="function","custom submenu controls missing")
+assert(enabled and manager and type(manager.func)=="function","submenu controls missing")
 manager.func()
 local panel=WorldChatFilterCustomFiltersFrame
-assert(panel and panel:IsShown() and closed==1,"manager frame must open from dropdown")
-assert(panel.customState:GetText()=="Custom filtering: ON","custom status default")
-local edits,adds={},{}
+assert(panel and panel:IsShown() and closed==1,"manager should open from dropdown")
+assert(panel.width==530 and panel.height==460,"manager must use compact layout")
+assert(panel.backdropColor and panel.backdropColor[4]>=0.95,
+       "window background should obscure the game behind it")
+assert(panel.customState:GetText()=="Custom Filtering: ON","custom status initial")
+local tab1=_G[panel:GetName().."Tab1"]
+local tab2=_G[panel:GetName().."Tab2"]
+assert(tab1 and tab2 and tab1.template=="TabButtonTemplate"
+       and tab2.template=="TabButtonTemplate","must use genuine Vanilla tab templates")
+assert(tab1:GetText()=="Blocked Players" and tab2:GetText()=="Words & Phrases",
+       "tab captions incorrect")
+assert(resized[tab1:GetName()]==216 and resized[tab2:GetName()]==216,
+       "Blizzard tab textures must have stable widths")
+assert(panel.numTabs==2 and panel.selectedTab==1,"default tab must be Players")
+local input=WorldChatFilterCustomEntryInput
+assert(input and input.template=="InputBoxTemplate" and input.maxLetters==120,
+       "must use one named input to avoid Vanilla $parent texture collisions")
+local add,mode,prev,next,removes=nil,nil,nil,nil,{}
 for _,frame in ipairs(frames) do
- if frame.kind=="EditBox" then edits[#edits+1]=frame end
- if frame.kind=="Button" and frame.text=="Add" then adds[#adds+1]=frame end
-end
-assert(#edits==2 and #adds==2,"player and phrase editing controls missing")
--- Genuine Vanilla 1.12 InputBoxTemplate has three $parent-named textures.
--- Creating two unnamed inputs causes template anchors to collide visually.
-assert(edits[1]:GetName()=="WorldChatFilterBlockedPlayerInput",
-       "player input must have a unique global name for $parent textures")
-assert(edits[2]:GetName()=="WorldChatFilterBlockedPhraseInput",
-       "phrase input must have a distinct global name for $parent textures")
-assert(edits[1]:GetName()~=edits[2]:GetName(),
-       "both InputBoxTemplate parents must be uniquely named")
-assert(_G[edits[1]:GetName()]==edits[1] and _G[edits[2]:GetName()]==edits[2],
-       "named edit boxes should be registered as Vanilla global frames")
-edits[1]:SetText("ChatSpammer")
-adds[1].scripts.OnClick()
-assert(W.IsBlockedPlayer("chatspammer") and edits[1]:GetText()=="","GUI Add player")
-edits[2]:SetText("discord.gg")
-adds[2].scripts.OnClick()
-assert(#W.db.blockedPhrases==1 and W.db.blockedPhrases[1].wholeWord==false,
-       "GUI default partial phrase")
-local wholeToggle
-for _,frame in ipairs(frames) do
- if frame.kind=="Button" and frame.text=="Partial match" then wholeToggle=frame end
-end
-assert(wholeToggle and wholeToggle.scripts.OnClick,"match mode toggle missing")
-wholeToggle.scripts.OnClick()
-assert(wholeToggle:GetText()=="Whole word","whole word UI state")
-edits[2]:SetText("Boost")
-adds[2].scripts.OnClick()
-assert(#W.db.blockedPhrases==2 and W.db.blockedPhrases[2].wholeWord,
-       "GUI whole word must persist with entry")
-local foundPlayer,foundWhole=false,false
-for _,frame in ipairs(frames) do
- if frame.kind=="FontString" and frame.text=="ChatSpammer" then foundPlayer=true end
- if frame.kind=="FontString" and frame.text=="Boost  [word]" then foundWhole=true end
-end
-assert(foundPlayer and foundWhole,"GUI list must show saved entries and match mode")
-local removePlayer
-for _,frame in ipairs(frames) do
- if frame.kind=="Button" and frame.text=="X" and frame.point and frame.point[4]==249 then
-  removePlayer=frame
-  break
+ if frame.kind=="Button" then
+  if frame.text=="Add" then add=frame end
+  if frame.text=="Partial match" then mode=frame end
+  if frame.text=="< Previous" then prev=frame end
+  if frame.text=="Next >" then next=frame end
+  if frame.text=="Remove" then removes[#removes+1]=frame end
  end
 end
-assert(removePlayer and removePlayer:IsShown(),"player row must show a remove button")
-removePlayer.scripts.OnClick()
-assert(not W.IsBlockedPlayer("chatspammer"),"GUI removal must update SavedVariables")
+assert(add and mode and prev and next and #removes==6,
+       "one Add, one mode button, six remove rows and pagination controls")
+assert(not mode:IsShown(),"phrase matching mode hidden on Players tab")
+local function hasLabel(fragment)
+ for _,frame in ipairs(frames) do
+  if frame.kind=="FontString" and string.find(frame.text,fragment,1,true) then
+    return true
+  end
+ end
+ return false
+end
+input:SetText("ChatSpammer")
+add.scripts.OnClick()
+assert(W.IsBlockedPlayer("chatspammer") and input:GetText()=="","GUI must add player")
+assert(hasLabel("ChatSpammer"),"player row should display saved player")
+assert(removes[1]:IsShown(),"active row should have Remove button")
+-- Tab switching updates shared input, switches list and shows match controls.
+input:SetText("unsaved value")
+tab2.scripts.OnClick()
+assert(panel.selectedTab==2 and input:GetText()=="","switching tabs clears unsafe pending entry")
+assert(mode:IsShown(),"matching mode visible for phrases")
+assert(not hasLabel("ChatSpammer"),"Players must not appear under Words/Phrases")
+input:SetText("discord.gg")
+add.scripts.OnClick()
+assert(#W.db.blockedPhrases==1 and W.db.blockedPhrases[1].text=="discord.gg"
+       and W.db.blockedPhrases[1].wholeWord==false,"partial phrase saved")
+assert(hasLabel("discord.gg") and hasLabel("[partial]"),"phrase row and match mode")
+mode.scripts.OnClick()
+assert(mode:GetText()=="Whole word","matching mode toggle should update")
+input:SetText("Boost")
+input.scripts.OnEnterPressed()
+assert(#W.db.blockedPhrases==2 and W.db.blockedPhrases[2].wholeWord==true,
+       "Enter should add whole-word phrase")
+assert(hasLabel("[whole word]"),"whole word matching label visible")
+-- UI changes must not silently erase the other tab's entries.
+tab1.scripts.OnClick()
+assert(panel.selectedTab==1 and not mode:IsShown(),"Players tab restored")
+assert(hasLabel("ChatSpammer") and W.IsBlockedPlayer("ChatSpammer"),
+       "player entries persist across tab switches")
+removes[1].scripts.OnClick()
+assert(not W.IsBlockedPlayer("chatspammer"),"Remove player from active tab")
+tab2.scripts.OnClick()
+assert(#W.db.blockedPhrases==2 and hasLabel("Boost"),
+       "phrase entries must survive switching back")
+removes[1].scripts.OnClick()
+assert(#W.db.blockedPhrases==1 and W.db.blockedPhrases[1].text=="Boost",
+       "Remove should act only on the active tab")
+
+-- Pagination is independent for each tab, supports deleting last entries.
+tab1.scripts.OnClick()
+for i=1,8 do assert(W.AddBlockedPlayer("Tester"..i)) end
+assert(not prev.enabled and next.enabled,"first page should allow next only")
+next.scripts.OnClick()
+assert(prev.enabled and not next.enabled,"second page should allow previous only")
+assert(hasLabel("Page 2 / 2") and hasLabel("Tester7"),
+       "second page must show final players and page number")
+removes[1].scripts.OnClick()
+removes[1].scripts.OnClick()
+assert(hasLabel("Page 1 / 1") and not next.enabled,
+       "after deleting last page, page index must clamp automatically")
+tab2.scripts.OnClick()
+assert(hasLabel("Page 1 / 1"),"phrases should retain their own pagination")
+assert(W.SetCustomFiltersTab("invalid")==false,"reject unknown tabs")
+
 enabled.func()
-assert(not W.db.customEnabled,"custom submenu enabled toggle")
+assert(not W.db.customEnabled,"submenu should disable custom filtering")
 W.RefreshCustomFiltersUI()
-assert(panel.customState:GetText()=="Custom filtering: OFF","manager must reflect submenu change")
+assert(panel.customState:GetText()=="Custom Filtering: OFF","UI should reflect submenu state")
 enabled.func()
-assert(W.db.customEnabled,"custom submenu should re-enable filter")
+assert(W.db.customEnabled,"submenu should enable custom filtering")
 W.ToggleCustomFiltersUI()
 assert(not panel:IsShown(),"manager should close")
 W.ToggleCustomFiltersUI()
 assert(panel:IsShown(),"manager should re-open")
-print("PASS v1.1 custom GUI: native submenu, two inputs, modes, rows/removal, enable, frame toggle")
+assert(W.IsBlockedPlayer("Tester1") and #W.db.blockedPhrases==1,
+       "all saved entries must survive window toggles")
+print("PASS v1.1 compact native tabs, player/phrase lists, word modes, pagination, opaque layout, GUI persistence")

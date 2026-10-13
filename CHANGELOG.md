@@ -2,6 +2,8 @@
 
 ## 1.1.0-dev — In progress
 
+- Redesign Custom Filters as a narrower Blizzard-style window with original Vanilla tabs for Blocked Players / Words & Phrases, one named input, contextual match controls, and an opaque backdrop.
+- Use a shared six-row paginated list with clear Remove buttons, per-tab paging, per-tab entry counts, and automatic navigation to freshly added entries; existing saved lists remain intact.
 - Fix clipped/missing middle border in the Blocked Words / Phrases input by assigning unique global names to both Vanilla `InputBoxTemplate` edit boxes (required for `$parent` texture anchors).
 - Add custom World-only player/word/phrase filters, a paginated native settings panel, case-insensitive partial and whole-word matching, and saved per-character lists.
 - Add Block/Unblock from World Chat to the 1.12 chat player's right-click FRIEND popup without invoking Blizzard /ignore. Track custom blocks separately in statistics; the master toggle and World-only channel gate remain authoritative.
