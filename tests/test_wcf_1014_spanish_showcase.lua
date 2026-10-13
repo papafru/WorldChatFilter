@@ -8,7 +8,7 @@ function UnitName() return "Tester" end
 local now,delivered=100,0
 function GetTime() return now end
 function ChatFrame_OnEvent() delivered=delivered+1 end
-function CreateFrame() return {RegisterEvent=function() end} end
+function CreateFrame() return {RegisterEvent=function() end,SetScript=function() end} end
 WorldChatFilterDB={
  enabled=true,filterGuild=true,filterLFG=true,filterServices=true,
  filterTrade=true,filterRepeats=false,sensitivity="balanced"
