@@ -2,6 +2,8 @@
 
 ## 1.1.0-dev — In progress
 
+- Restyle the Statistics panel with the Dark Arcane theme, unified bronze controls, clean counters and in-panel two-step reset confirmation (no chat spam).
+- Add a Help / Commands panel with General, Custom Filters and Tools tabs, real supported slash commands and usage tips. `/wcf help` and the existing settings-menu entry now open the panel instead of printing commands in chat.
 - Restyle the Custom Filters manager as **Dark Arcane Blizzard**: cohesive slate/bronze buttons and tabs, Dusty Gold highlights, sage/gray filtering status, strong dark backdrop, subtle row stripes, understated Remove buttons, and dual Partial/Whole Word controls. All textures and APIs are Vanilla 1.12 compatible; stored custom filters remain unchanged.
 - Redesign Custom Filters as a narrower Blizzard-style window with original Vanilla tabs for Blocked Players / Words & Phrases, one named input, contextual match controls, and an opaque backdrop.
 - Use a shared six-row paginated list with clear Remove buttons, per-tab paging, per-tab entry counts, and automatic navigation to freshly added entries; existing saved lists remain intact.

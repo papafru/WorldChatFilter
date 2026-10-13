@@ -95,17 +95,9 @@ function WCF.Status()
   WCF.Print("World filtering: " .. status .. ". Sensitivity: " .. tostring(WCF.db.sensitivity) .. ". Hidden this session: " .. tostring(WCF.sessionHidden) .. ".")
 end
 
+-- Help is now an in-game panel rather than multiple chat messages.
 function WCF.Help()
-  WCF.Print("/wcf = options | /wcf toggle | /wcf on | /wcf off | /wcf status | /wcf help")
-  WCF.Print("/wcf test <message> = explain classification | /wcf debug = toggle block reasons")
-  WCF.Print("/wcf mode careful|balanced|aggressive = set detection sensitivity")
-  WCF.Print("/wcf stats = show session and all-time statistics")
-  WCF.Print("/wcf custom = open personal World-only block lists")
-  WCF.Print("/wcf block player <name> | /wcf unblock player <name>")
-  WCF.Print("/wcf block text <phrase> | /wcf block word <word> | /wcf unblock text <phrase>")
-  WCF.Print("/wcf channeldebug = log channel metadata (not message contents) for diagnosis")
-  WCF.Print("/wcf color on|off|picker|reset = World chat color options")
-  WCF.Print("This addon NEVER joins/leaves channels or moderates other players.")
+  if WCF.ToggleHelpUI then WCF.ToggleHelpUI() end
 end
 
 SLASH_WORLDCHATFILTER1 = "/wcf"

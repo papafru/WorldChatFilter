@@ -1,84 +1,81 @@
--- WorldChatFilter v0.3 beta statistics (Vanilla Lua 5.0 compatible).
--- Counters are updated only for messages actually hidden in /World.
-local WCF = WorldChatFilter
-local categories = {"Trade", "LFG", "Guild", "Services", "Repeats", "Custom"}
-local session = nil
-local statsFrame, cells, resetAllButton
-local confirmReset = false
+-- WorldChatFilter v1.1: Dark Arcane Statistics panel.
+-- Counters are updated ONLY when a message is hidden in the World channel.
+local WCF=WorldChatFilter
+local categories={"Trade","LFG","Guild","Services","Repeats","Custom"}
+local session=nil
+local statsFrame,cells,resetAllButton,resetHint
+local confirmReset=false
 
 local function freshCounts()
-  return {total = 0, Trade = 0, LFG = 0, Guild = 0, Services = 0, Repeats = 0, Custom = 0}
+  return {total=0,Trade=0,LFG=0,Guild=0,Services=0,Repeats=0,Custom=0}
 end
-
 local function normalizeCounts(value)
-  if type(value) ~= "table" then value = {} end
-  local defaults = freshCounts()
+  if type(value)~="table" then value={} end
+  local defaults=freshCounts()
   local key
   for key in pairs(defaults) do
-    local n = tonumber(value[key]) or 0
-    if n < 0 then n = 0 end
-    value[key] = math.floor(n)
+    local n=tonumber(value[key]) or 0
+    if n<0 then n=0 end
+    value[key]=math.floor(n)
   end
   return value
 end
 
 function WCF.InitializeStats()
   if not WCF.db then return end
-  WCF.db.stats = normalizeCounts(WCF.db.stats)
-  if not session then session = freshCounts() end
-  WCF.sessionHidden = session.total
+  WCF.db.stats=normalizeCounts(WCF.db.stats)
+  if not session then session=freshCounts() end
+  WCF.sessionHidden=session.total
 end
 
 function WCF.GetStats()
   if not WCF.db then WCF.Initialize() end
   if not session then WCF.InitializeStats() end
-  return session, WCF.db.stats
+  return session,WCF.db.stats
 end
 
 function WCF.RecordHiddenMessage(category)
-  local current, lifetime = WCF.GetStats()
-  if category ~= "Trade" and category ~= "LFG" and category ~= "Guild" and category ~= "Services" and category ~= "Custom" then
-    category = "Repeats"
+  local current,lifetime=WCF.GetStats()
+  if category~="Trade" and category~="LFG" and category~="Guild" and
+     category~="Services" and category~="Custom" then
+    category="Repeats"
   end
-  current.total = current.total + 1
-  lifetime.total = lifetime.total + 1
-  current[category] = current[category] + 1
-  lifetime[category] = lifetime[category] + 1
-  WCF.sessionHidden = current.total
+  current.total=current.total+1
+  lifetime.total=lifetime.total+1
+  current[category]=current[category]+1
+  lifetime[category]=lifetime[category]+1
+  WCF.sessionHidden=current.total
   if WCF.UpdateStatsUI then WCF.UpdateStatsUI() end
 end
 
 function WCF.ResetSessionStats()
-  session = freshCounts()
-  WCF.sessionHidden = 0
+  session=freshCounts()
+  WCF.sessionHidden=0
   if WCF.UpdateStatsUI then WCF.UpdateStatsUI() end
 end
 
 function WCF.ResetAllStats()
   if not WCF.db then WCF.Initialize() end
-  WCF.db.stats = freshCounts()
+  WCF.db.stats=freshCounts()
   WCF.ResetSessionStats()
 end
 
--- A dedicated (optional) statistics panel; main settings remain a compact dropdown.
-local function label(parent, font, text, x, y, width, justify)
-  local fs = parent:CreateFontString(nil, "OVERLAY", font)
-  fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-  fs:SetWidth(width)
-  fs:SetHeight(20)
-  fs:SetJustifyH(justify or "LEFT")
-  fs:SetText(text or "")
-  return fs
+local function clearConfirmation()
+  confirmReset=false
+  if resetAllButton then resetAllButton:SetText("Reset All") end
+  if resetHint then
+    resetHint:SetText("Resets are local to this character.")
+  end
 end
 
 function WCF.UpdateStatsUI()
   if not statsFrame or not statsFrame:IsShown() then return end
-  local current, lifetime = WCF.GetStats()
+  local current,lifetime=WCF.GetStats()
   local i
-  for i = 1, table.getn(categories) do
-    local category = categories[i]
-    cells[category][1]:SetText(tostring(current[category]))
-    cells[category][2]:SetText(tostring(lifetime[category]))
+  for i=1,table.getn(categories) do
+    local key=categories[i]
+    cells[key][1]:SetText(tostring(current[key]))
+    cells[key][2]:SetText(tostring(lifetime[key]))
   end
   cells.total[1]:SetText(tostring(current.total))
   cells.total[2]:SetText(tostring(lifetime.total))
@@ -86,92 +83,66 @@ end
 
 function WCF.BuildStatsUI()
   if statsFrame then return statsFrame end
-  local f = CreateFrame("Frame", "WorldChatFilterStatisticsFrame", UIParent)
-  f:SetWidth(440)
-  f:SetHeight(392)
-  f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-  f:SetFrameStrata("DIALOG")
-  f:SetMovable(true)
-  f:EnableMouse(true)
-  f:RegisterForDrag("LeftButton")
-  f:SetScript("OnDragStart", function() f:StartMoving() end)
-  f:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
-  f:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true, tileSize = 32, edgeSize = 32,
-    insets = {left=11, right=12, top=12, bottom=11}
-  })
-  f:Hide()
-  statsFrame = f
-  cells = {}
+  if not WCF.db then WCF.Initialize() end
+  local T=WCF.PanelTheme
+  local P=T.colors
+  local f=T.Panel("WorldChatFilterStatisticsFrame",530,462,
+                  "World Chat Filter","STATISTICS",
+                  "Messages hidden from /World (this character)")
+  statsFrame=f
+  cells={}
 
-  local close = CreateFrame("Button", "WorldChatFilterStatsClose", f, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
-  close:SetScript("OnClick", function() f:Hide() end)
-
-  label(f, "GameFontNormalLarge", "World Chat Filter  |cff80e4a0Statistics|r", 23, -23, 365)
-  label(f, "GameFontHighlightSmall", "Advertisements hidden from /World (this character)", 24, -54, 390)
-  label(f, "GameFontNormal", "Category", 27, -86, 155)
-  label(f, "GameFontNormal", "Session", 217, -86, 78, "RIGHT")
-  label(f, "GameFontNormal", "All-time", 319, -86, 84, "RIGHT")
+  T.Label(f,"GameFontNormal","Category",35,-112,213,P.gold)
+  T.Label(f,"GameFontNormal","Session",301,-112,82,P.gold,"RIGHT")
+  T.Label(f,"GameFontNormal","All-time",403,-112,91,P.gold,"RIGHT")
 
   local i
-  for i = 1, table.getn(categories) do
-    local category = categories[i]
-    local top = -115 - (i-1) * 27
-    label(f, "GameFontHighlight", category == "Repeats" and "Repeated Messages" or category, 29, top, 175)
-    cells[category] = {
-      label(f, "GameFontHighlight", "0", 220, top, 75, "RIGHT"),
-      label(f, "GameFontHighlight", "0", 321, top, 80, "RIGHT")
+  for i=1,table.getn(categories) do
+    local category=categories[i]
+    local top=-145-(i-1)*32
+    T.Row(f,27,top-2,474,29,i)
+    T.Label(f,"GameFontHighlight",
+            category=="Repeats" and "Repeated Messages" or category,
+            40,top,215,P.text)
+    cells[category]={
+      T.Label(f,"GameFontHighlight","0",300,top,81,P.text,"RIGHT"),
+      T.Label(f,"GameFontHighlight","0",407,top,85,P.text,"RIGHT")
     }
   end
-
-  label(f, "GameFontNormal", "TOTAL HIDDEN", 29, -299, 168)
-  cells.total = {
-    label(f, "GameFontNormal", "0", 220, -299, 75, "RIGHT"),
-    label(f, "GameFontNormal", "0", 321, -299, 80, "RIGHT")
+  T.Row(f,27,-346,474,32,2)
+  T.Label(f,"GameFontNormal","TOTAL HIDDEN",40,-350,230,P.gold)
+  cells.total={
+    T.Label(f,"GameFontNormal","0",300,-350,81,P.gold,"RIGHT"),
+    T.Label(f,"GameFontNormal","0",407,-350,85,P.gold,"RIGHT")
   }
 
-  local sessionButton = CreateFrame("Button", "WorldChatFilterResetSession", f, "UIPanelButtonTemplate")
-  sessionButton:SetWidth(130)
-  sessionButton:SetHeight(23)
-  sessionButton:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 25, 24)
-  sessionButton:SetText("Reset Session")
-  sessionButton:SetScript("OnClick", function()
+  resetHint=T.Label(f,"GameFontHighlightSmall",
+                    "Resets are local to this character.",
+                    30,-389,460,P.muted)
+  local resetSession=T.Button(f,"Reset Session",31,-424,160,function()
     WCF.ResetSessionStats()
-    confirmReset = false
-    if resetAllButton then resetAllButton:SetText("Reset All") end
+    clearConfirmation()
   end)
-
-  resetAllButton = CreateFrame("Button", "WorldChatFilterResetAll", f, "UIPanelButtonTemplate")
-  resetAllButton:SetWidth(125)
-  resetAllButton:SetHeight(23)
-  resetAllButton:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -25, 24)
-  resetAllButton:SetText("Reset All")
-  resetAllButton:SetScript("OnClick", function()
+  resetAllButton=T.Button(f,"Reset All",343,-424,156,function()
     if not confirmReset then
-      confirmReset = true
+      confirmReset=true
       resetAllButton:SetText("Confirm Reset")
-      WCF.Print("Click Confirm Reset to clear all-time statistics for this character.")
+      resetHint:SetText("Click Confirm Reset to erase all-time statistics.")
     else
       WCF.ResetAllStats()
-      confirmReset = false
-      resetAllButton:SetText("Reset All")
+      clearConfirmation()
     end
-  end)
-  f:SetScript("OnHide", function()
-    confirmReset = false
-    resetAllButton:SetText("Reset All")
-  end)
+  end,true)
+  f:SetScript("OnHide",clearConfirmation)
   return f
 end
 
 function WCF.ToggleStatsUI()
-  local f = WCF.BuildStatsUI()
+  local f=WCF.BuildStatsUI()
   if f:IsShown() then
     f:Hide()
   else
+    if type(CloseDropDownMenus)=="function" then CloseDropDownMenus() end
     f:Show()
     WCF.UpdateStatsUI()
   end

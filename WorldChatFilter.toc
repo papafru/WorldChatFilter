@@ -6,8 +6,10 @@
 ## SavedVariablesPerCharacter: WorldChatFilterDB
 Core.lua
 CustomFilters.lua
+PanelTheme.lua
 Color.lua
 Statistics.lua
+HelpUI.lua
 Classifier.lua
 Filter.lua
 CustomFiltersUI.lua

@@ -25,7 +25,7 @@ jobs:
         run: |
           set -eu
           mkdir -p dist/WorldChatFilter/Media
-          for file in WorldChatFilter.toc Core.lua CustomFilters.lua Color.lua Statistics.lua Classifier.lua Filter.lua CustomFiltersUI.lua UI.lua; do
+          for file in WorldChatFilter.toc Core.lua CustomFilters.lua PanelTheme.lua Color.lua Statistics.lua HelpUI.lua Classifier.lua Filter.lua CustomFiltersUI.lua UI.lua; do
             test -s "$file"
             cp "$file" dist/WorldChatFilter/
           done

@@ -79,10 +79,11 @@ command("toggle")
 W.db=nil
 W.Initialize()
 assert(W.db==db and W.db.enabled==false,"disabled state must persist across init")
+local opened=0
+W.ToggleHelpUI=function() opened=opened+1 end
+local oldMessages=#messages
 W.Help()
-local help=false
-for _,line in ipairs(messages) do
-  if string.find(line,"/wcf toggle",1,true) then help=true end
-end
-assert(help,"Help must list the macro command")
+assert(opened==1 and #messages==oldMessages,"Help should open UI, not write to chat")
+command("help")
+assert(opened==2 and #messages==oldMessages,"/wcf help must open Help window")
 print("PASS v1.1 macro toggle: ON/OFF, feedback, UI/color refresh, persistence, original commands, World-only")

@@ -17,7 +17,8 @@
 - **Sensitivity:** **Careful**, **Balanced** (default), or **Aggressive**.
 - **Blizzard-style settings:** Dropdown menu with toggles, a circular minimap icon, and **Shift + drag** to reposition it.
 - **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
-- **Statistics:** Session and all-time hidden-message counts by category, saved per character.
+- **Statistics:** Dark Arcane statistics window with session/all-time counts per category and confirmation before resetting lifetime counts.
+- **Help / Commands (v1.1 dev):** Dark Arcane in-game help with General, Custom Filters and Tools tabs. `/wcf help` opens the panel instead of printing a command list in chat.
 - **Diagnostics:** Explain sample classifications and troubleshoot channel identification.
 - **Custom World-only filters (v1.1 dev):** Personal blocked-player and word/phrase lists managed in a compact **Dark Arcane** two-tab panel with unified slate/bronze controls, Dusty Gold accents, and Partial/Whole Word matching for text entries. Right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
 - **No dependencies:** Works without SocialChat or external libraries.
