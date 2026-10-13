@@ -22,7 +22,7 @@ Quick access to filtering status, active sensitivity, selected World tint, sessi
 
 ## Custom World Chat Color picker
 
-Use the four color presets or select a custom RGB tint using WoW's built-in Color Picker. **Warm Stone** is the default preset; the displayed color affects only new World messages.
+Use the four color presets or select a custom RGB tint using WoW's built-in Color Picker. **Dusty Gold** is the default preset; the displayed color affects only new World messages.
 
 ![World Chat Color submenu and native RGB picker](screenshots/color-picker-custom.webp)
 

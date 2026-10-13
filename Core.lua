@@ -2,7 +2,7 @@
 -- WoW Vanilla 1.12 API / 1.18-based clients; Lua 5.0 syntax only.
 WorldChatFilter = {}
 local WCF = WorldChatFilter
-WCF.VERSION = "1.1.0-dev"
+WCF.VERSION = "1.1.0"
 WCF.CHANNEL = "World"
 WCF.sessionHidden = 0
 WCF.db = nil

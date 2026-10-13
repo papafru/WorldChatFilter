@@ -1,6 +1,6 @@
 # World Chat Filter
 
-> **Development branch (`v1.1-dev`):** Experimental v1.1 features, not a stable release. Update your local development checkout with `git pull --ff-only`. **Latest stable release: [v1.0.1](https://github.com/papafru/WorldChatFilter/releases/tag/v1.0.1).**
+> **Latest stable release: [v1.1.0](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.0).** The experimental `v1.1-dev` branch remains separate. The v1.0.1 release is available in the [release history](https://github.com/papafru/WorldChatFilter/releases).
 
 **Keep the conversation. Filter the noise.**
 
@@ -18,9 +18,9 @@
 - **Blizzard-style settings:** Dropdown menu with toggles, a circular minimap icon, and **Shift + drag** to reposition it.
 - **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
 - **Statistics:** Dark Arcane statistics window with session/all-time counts per category and confirmation before resetting lifetime counts.
-- **Help / Commands (v1.1 dev):** Dark Arcane in-game help with General, Custom Filters and Tools tabs. `/wcf help` opens the panel instead of printing a command list in chat.
+- **Help / Commands (v1.1):** Dark Arcane in-game help with General, Custom Filters and Tools tabs. `/wcf help` opens the panel instead of printing a command list in chat.
 - **Diagnostics:** Explain sample classifications and troubleshoot channel identification.
-- **Custom World-only filters (v1.1 dev):** Personal blocked-player and word/phrase lists managed in a compact **Dark Arcane** two-tab panel with unified slate/bronze controls, Dusty Gold accents, and Partial/Whole Word matching for text entries. Right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
+- **Custom World-only filters (v1.1):** Personal blocked-player and word/phrase lists managed in a compact **Dark Arcane** two-tab panel with unified slate/bronze controls, Dusty Gold accents, and Partial/Whole Word matching for text entries. Right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
 - **No dependencies:** Works without SocialChat or external libraries.
 
 ## Compatibility
@@ -36,7 +36,7 @@
 
 **Manual installation:**
 
-1. Download **[WorldChatFilter-v1.0.1.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.0.1/WorldChatFilter-v1.0.1.zip)** from the [v1.0.1 GitHub Release](https://github.com/papafru/WorldChatFilter/releases/tag/v1.0.1). Use the named release asset, not the auto-generated **Source code (ZIP)**, because only the release asset comes prepackaged in a `WorldChatFilter/` folder.
+1. Download **[WorldChatFilter-v1.1.0.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.1.0/WorldChatFilter-v1.1.0.zip)** from the [v1.1 GitHub Release](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.0). Use the named release asset, not the auto-generated **Source code (ZIP)**, because only the release asset comes prepackaged in a `WorldChatFilter/` folder.
 2. Close WoW and extract the ZIP.
 3. Copy the **`WorldChatFilter`** directory into `World of Warcraft/Interface/AddOns/`.
 4. Make sure this file exists: `Interface/AddOns/WorldChatFilter/WorldChatFilter.toc` (no extra nesting).
@@ -53,7 +53,7 @@ Click the minimap icon or type `/wcf`. Available controls include:
 - Enable/disable filtering and individual categories.
 - Choose **Careful**, **Balanced**, or **Aggressive** detection.
 - Open the **World Chat Color** submenu to enable the tint, choose a preset, open **Choose Custom Color...**, or reset to **Dusty Gold**.
-- Open the **Statistics** panel and reset session/all-time counters.
+- Open the **Statistics**, **Help / Commands** and **Custom Filters** Dark Arcane panels; reset session/all-time counters with in-window confirmation.
 
 Preset colors:
 
@@ -90,7 +90,7 @@ The color is applied to **new World messages only**, not previously displayed li
 | `/wcf test <message>` | Explain the decision for a sample message |
 | `/wcf debug` | Toggle classification reasons in chat |
 | `/wcf channeldebug` | Toggle channel metadata diagnostics |
-| `/wcf help` | Show the command list |
+| `/wcf help` | Open the in-game Help / Commands window |
 
 ## How it works
 

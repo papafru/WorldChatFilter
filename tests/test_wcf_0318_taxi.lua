@@ -11,7 +11,7 @@ local root=''
 for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile(root..f) end
 WorldChatFilter.Initialize()
 local w=WorldChatFilter
-assert(w.VERSION=='1.1.0-dev')
+assert(w.VERSION=='1.1.0')
 local ads={
  'T A X I 3Gold: Hyjal + Waterlords + Silithus + Everlook + Tanaris + Ratchet + EPL/Stratholme + DireMaul + Booty Bay + BlackRockMountain',
  'T.A.X.I 3Gold: Hyjal + Waterlords + Silithus + Everlook',

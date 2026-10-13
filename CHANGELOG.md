@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.1.0-dev — In progress
+## 1.1.0 — 2026-10-13
+
+**Official v1.1 release.** All features below were developed and tested on `v1.1-dev`, with 35/35 Lua regression tests passing before publication. Only /World is filtered; existing settings, historical statistics and personal block lists are retained.
 
 - Restyle the Statistics panel with the Dark Arcane theme, unified bronze controls, clean counters and in-panel two-step reset confirmation (no chat spam).
 - Add a Help / Commands panel with General, Custom Filters and Tools tabs, real supported slash commands and usage tips. `/wcf help` and the existing settings-menu entry now open the panel instead of printing commands in chat.

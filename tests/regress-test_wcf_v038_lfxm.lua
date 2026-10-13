@@ -15,7 +15,7 @@ dofile(root ..'Classifier.lua')
 dofile(root ..'Filter.lua')
 WorldChatFilter.Initialize()
 local WCF=WorldChatFilter
-assert(WCF.VERSION=='1.1.0-dev')
+assert(WCF.VERSION=='1.1.0')
 local ads={
   'Kara10 LF7M Need All 3/10 [Leggings of the Inferno] hr',
   'LF6M BRD, DPS and healer needed',

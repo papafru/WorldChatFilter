@@ -1,32 +1,54 @@
-# World Chat Filter v1.0.1
+# World Chat Filter v1.1.0
 
 **Keep the conversation. Filter the noise.**
 
-Bugfix and UI update for Vanilla WoW 1.12 API / Turtle-style 1.18 clients, incorporating all fixes developed after v1.0.0.
+A major quality-of-life update for the **Vanilla 1.12 API / Turtle-style 1.18 clients**. World Chat Filter remains 100% local and continues to hide messages **only from /World**, never from Party, Raid, Trade, Guild, General, or whispers.
 
-## What's new
+## New in v1.1
 
-- **More accurate group-finding detection:** leading `LF` with or without a number followed by a class, role, spec, dungeon, raid, or battleground. Handles full instance names and common abbreviations, including Vanilla and Turtle WoW custom content (e.g. `LF4 RAZORFEN KRAUL`, `LF RFK`, `LF WSG`, `LF KARA10`).
-- **Crafting and enchantment requests:** recognize recipe/enchant hyperlinks with or without spaces after `LF`, including `LF[Enchant Weapon - Spell Power]`. These are grouped under **Services**, while unrelated item links and normal discussion remain separate.
-- **Guild recruitment improvements:** detect direct invitations such as `Join THE CULT, we're a social guild` even without traditional recruitment keywords.
-- **World color improvements:** **Dusty Gold** (`#D1B77F`) is the new default preset; the Color Presets submenu opens to the **left** to avoid overlapping the settings menu. Reset now selects Dusty Gold. **Existing custom/preset selections are preserved** during upgrades.
-- **Safer filtering:** the newly introduced patterns are scoped to relevant advertising context and respect each category toggle. Other chat channels remain untouched.
+### One-button ON/OFF macro
+Use `/wcf toggle` in a WoW macro to enable or disable filtering without opening Settings. Existing `/wcf on` and `/wcf off` continue to work. Your saved preferences and custom lists remain intact.
 
-## Installation
+### Personal World-only player filtering
+Keep a per-character list of players whose messages you do not want to see in World chat. Right-click a player's name in chat and select **Block from World Chat**; repeat to **Unblock from World Chat**. This does **not** add them to WoW's global Ignore list; their messages in other channels and whispers remain visible.
 
-Download **[WorldChatFilter-v1.0.1.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.0.1/WorldChatFilter-v1.0.1.zip)** from the release assets.
+### Custom words and phrases
+Add case-insensitive filters for words and phrases with **Partial match** or **Whole word** matching. Manage entries in the new **Blocked Players / Words & Phrases** interface with one input, two tabs, pagination, and per-entry Remove controls. Edit or disable custom filtering without affecting the main automatic ad classifier.
 
-1. Close World of Warcraft.
-2. Extract the included `WorldChatFilter` folder to `Interface/AddOns/`.
-3. Check that `Interface/AddOns/WorldChatFilter/WorldChatFilter.toc` exists and that there is **no extra nested folder**.
-4. Start WoW and type `/wcf` for settings.
+### Unified Dark Arcane Blizzard interface
+- **Custom Filters:** A compact two-tab manager with dark slate and bronze controls, subtle hover effects, muted green ON state, Dusty Gold highlights, and an opaque backdrop.
+- **Statistics:** Restyled category/session/all-time counts, including a dedicated **Custom** category. Reset All uses an in-window confirmation instead of printing prompts in chat.
+- **Help / Commands:** A new in-game reference window with **General**, **Custom Filters**, and **Tools** tabs. Use `/wcf help` or Settings → Help / Commands to open it; the command list is no longer spammed into chat.
 
-For existing installations, replace the addon folder but retain the character's `WTF/.../SavedVariables` files to keep settings and statistics. Compatible GitHub addon managers can continue using the repository URL.
+### Useful commands
 
-## Compatibility and testing
+| Command | Purpose |
+| --- | --- |
+| `/wcf` | Settings menu |
+| `/wcf toggle` | Toggle World filtering, suitable for macros |
+| `/wcf custom` | Open personal block lists |
+| `/wcf block player NAME` | Block a player from World only |
+| `/wcf unblock player NAME` | Unblock a player |
+| `/wcf block text PHRASE` | Block a text substring |
+| `/wcf block word PHRASE` | Block a whole word / phrase |
+| `/wcf unblock text PHRASE` | Remove a phrase |
+| `/wcf stats` | Statistics panel |
+| `/wcf help` | In-game help and command reference |
 
-- WoW Vanilla 1.12 API / Turtle-style 1.18 clients; no external dependencies.
-- **31/31 Lua 5.1 regression tests passing** prior to packaging, including the new LF and crafting-link cases, existing filters, and World-channel isolation.
-- In-client behavior still depends on the particular client and other chat addons; reports with sanitized examples are welcome.
+## Upgrade / installation
 
-This release has its own `v1.0.1` source tag and an installation-ready ZIP. The previous `v1.0.0` release remains available.
+1. Download the **[WorldChatFilter-v1.1.0.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.1.0/WorldChatFilter-v1.1.0.zip)** release asset. Use this ZIP rather than GitHub's automatically generated source archive for manual installation.
+2. Close WoW, extract the included `WorldChatFilter` folder to `Interface/AddOns/` (no extra nested folder), and restart.
+3. Keep your `WTF/.../SavedVariables/WorldChatFilter.lua` file; preferences, custom lists, and historical statistics survive the upgrade.
+
+Compatible addon managers can install/update using `https://github.com/papafru/WorldChatFilter`.
+
+## Compatibility, safety and tests
+
+- Vanilla API 1.12 / Turtle-style 1.18 custom clients.
+- **35/35 Lua regression tests** for the release build, covering filter behavior, category stats, custom lists, slash commands, GUI interactions, and World-only isolation.
+- No AI, external servers, telemetry, or network dependencies; chat is classified locally.
+- Purely client-side filtering; the addon cannot moderate other players or change their chat.
+- User-interface behavior has been reviewed in game on OctoWoW 1.18. Other custom clients or chat addons may require further compatibility testing.
+
+Previous releases, including **v1.0.1**, remain available.
