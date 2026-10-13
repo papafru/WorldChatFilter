@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Recognize leading `LF` with or without a number plus class/role/spec or dungeon/raid/BG, including Vanilla and Turtle WoW full names/abbreviations (`LF4 RAZORFEN KRAUL`, `LF RFK`).
+- Regression tests for optional counts, ordinary chat and World-channel isolation.
+
+
 ## 0.3.23 — Beta (2026-10-12)
 
 - Recognize short `LF + dungeon` ads, including Scarlet Graveyard variants.

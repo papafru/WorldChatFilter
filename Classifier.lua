@@ -223,6 +223,60 @@ local groupSpecs = {holy=true, shadow=true, discipline=true, disc=true,
 -- Detect "LF 1Healer", "LF1Mage", "LF 2 DPS", "LF 1 Rogue" and
 -- "Looking for 2 Shamans". Lua 5.0 patterns; tokens must be whole words.
 -- Do not enumerate specific class/count combinations in the classifier.
+-- LF followed by an optional number + role/class/spec or dungeon/raid/BG.
+-- Vanilla and Turtle WoW full names and popular community abbreviations.
+-- The targets alone never cause a block; a leading LF is required.
+local lfDestinations = {
+  "ragefire chasm","rfc","wailing caverns","wc","deadmines","vc",
+  "dm","shadowfang keep","sfk","blackfathom deeps","bfd","stockades",
+  "stockade","stocks","stock","gnomeregan","gnomer","gnome",
+  "razorfen kraul","rfk","razorfen downs","rfd","scarlet monastery","sm",
+  "sm gy","sm lib","sm arm","sm cath","graveyard","library",
+  "armory","cathedral","uldaman","ulda","zul farrak","zulfarrak",
+  "zf","maraudon","mara","sunken temple","temple of atal hakkar","atal hakkar",
+  "st","blackrock depths","brd","lower blackrock spire","lbrs","upper blackrock spire",
+  "ubrs","blackrock spire","brs","dire maul","dm east","dm west",
+  "dm north","dme","dmw","dmn","scholomance","scholo",
+  "stratholme","strat","strat live","strat ud","molten core","mc",
+  "onyxia","ony","blackwing lair","bwl","zul gurub","zg",
+  "ruins of ahn qiraj","aq20","aq 20","aq","temple of ahn qiraj","aq40",
+  "aq 40","naxxramas","naxx","warsong gulch","warsong","wsg",
+  "arathi basin","ab","alterac valley","av","crescent grove","the crescent grove",
+  "cg","hateforge quarry","hateforge","hfq","hq","stormwrought ruins",
+  "stormwrought","swr","gilneas city","gilneas","karazhan crypt","karazhan crypts",
+  "kara crypts","crypts","kc","black morass","bm","stormwind vault",
+  "stormwind vaults","swv","lower karazhan halls","lower kara","kara10","kara 10",
+  "k10","lkh","emerald sanctum","es","tower of karazhan","upper kara",
+  "kara40","kara 40","tok","timbermaw hold","tmh","sunnyglade valley",
+  "sgv","blood ring","thorn gorge","tg","dungeon","dungeons",
+  "instance","instances","raid","raids","bg","bgs",
+  "battleground","battlegrounds"
+}
+local lfRoleAliases = {
+  rdps=true,mdps=true,ranged=true,melee=true,warr=true,war=true,hunt=true,
+  hun=true,rog=true,pala=true,pally=true,pal=true,sham=true,shammy=true,
+  dru=true,drood=true,dudu=true,wl=true,spriest=true,sp=true,hpal=true,
+  rdru=true,rsham=true,ele=true,boomie=true,retadin=true,healadin=true
+}
+local lfAdvicePhrases = {"lf advice", "lf some advice", "lf tips",
+  "lf some tips", "lf help with", "lf a name", "lf a cool"}
+local function leadingLfTarget(text)
+  -- normalize() wraps the line with spaces; uses Vanilla-compatible patterns.
+  -- Matches LF RFK / LF4 RFK / LF 4 RFK / LF healer.
+  if not string.find(text, "^ lf") then return false end
+  local _, _, number, target = string.find(text, "^ lf%s*(%d*)%s+(.+) $")
+  if not target then return false end
+  if number ~= "" and tonumber(number) and tonumber(number) <= 0 then return false end
+  if somePhrase(text, lfAdvicePhrases) then return false end
+  local tail = " " .. target .. " "
+  if somePhrase(tail, lfDestinations) then return true end
+  local word
+  for word in string.gfind(target, "%a+") do
+    if groupTypes[word] or groupSpecs[word] or lfRoleAliases[word] then return true end
+  end
+  return false
+end
+
 local countedLfPattern = " lf%s*(%d+)%s*([%a]+) "
 local countedLookingPattern = " looking for%s*(%d+)%s*([%a]+) "
 local function countGroupSearch(text, pattern)
@@ -307,6 +361,7 @@ end
 
 local function lfg(text, lower, message)
   local r = newResult("LFG")
+  local directLfTarget = leadingLfTarget(text)
   -- Generic LF<number>M group shorthand (LF1M, LF7M, LF12M, etc.).
   -- Normalization inserts spaces at word boundaries, so this detects whole
   -- tokens only and never matches e.g. ALF7M, LF7MX or player names.
@@ -462,9 +517,9 @@ local function lfg(text, lower, message)
       (slotDiscussion or formatDiscussion) and
       not dungeonRosterCount and not speakerRequest then return r end
   r.ignoreQuestionPenalty = directRoleRequest or speakerRequest or
-      dungeonRosterCount or scheduledDungeonListing
+      dungeonRosterCount or scheduledDungeonListing or directLfTarget
   r.intent = directRoleRequest or speakerRequest or scheduledDungeonListing or
-      dungeonRosterCount or
+      directLfTarget or dungeonRosterCount or
       scheduledRoleDemand or leadingLfDungeon or
       needRoleListing or compactRosterListing or
       countedLfRoleOrClass or countedLookingRoleOrClass or
@@ -475,6 +530,7 @@ local function lfg(text, lower, message)
       (dungeon or activity or typeCount >= 2 or summoning)) or
     (slots and (role or dungeon or activity))
   if not r.intent then return r end
+  if directLfTarget then add(r, 13, "leading LF with optional number + group target") end
   if directRoleRequest then add(r, 11, "direct Need <role> / <role> needed request") end
   if speakerRequest then add(r, 18, "LF/LFM/Looking for X speakers") end
   if dungeonRosterCount then add(r, 12, "dungeon + player slot + role/class in any order") end
