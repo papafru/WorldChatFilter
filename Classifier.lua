@@ -934,6 +934,44 @@ local function guild(text, lower, message)
   local spanishOpenRecruitment = guildTag and spanishRecruiting and
       any(text, {"miembros", "jugadores", "players", "members"}) and
       (raid or discord or spanishCommunity) and not advertisementDiscussion
+
+  -- Spanish guild showcases may omit "buscamos"/"reclutamos". Three independent
+  -- signals must co-occur: (1) named guild + community/member pitch;
+  -- (2) WoW raid/activity, including count-suffixed MC25/Kara10;
+  -- (3) explicit contact request such as "/whisp para info".
+  -- Never match named guilds themselves; single tokens cannot trigger this.
+  local spanishShowcaseIdentity = (guildTag or
+      any(text, {"gremio", "hermandad", "guild", "gilda"})) and
+      (spanishCommunity or any(text, {"gremio", "hermandad"})) and
+      any(text, {"miembros", "jugadores", "raiders", "integrantes"})
+  local spanishShowcaseRaid = raid or
+      any(text, {"raids", "raideo", "raideos", "pve", "pvp", "progresion",
+          "progreso", "trash", "runs"}) or
+      string.find(text, " mc%d+ ") ~= nil or
+      string.find(text, " kara%d+ ") ~= nil or
+      string.find(text, " zg%d+ ") ~= nil
+  local spanishShowcaseContact = somePhrase(text, {
+      "whisp para info", "wisp para info", "whisper para info",
+      "susurro para info", "susurrame para info",
+      "escribeme para info", "escribenos para info",
+      "mensaje para info", "pm para info", "whisp para detalles",
+      "whisper para detalles", "contactanos para info",
+      "whisp para mas info", "manda whisp", "mandame whisper"
+    }) or (any(text, {"whisp", "wisp", "whisper", "susurro",
+            "susurrame"}) and
+        somePhrase(text, {"para informacion", "mas informacion",
+            "para detalles", "para unirte"}))
+  local spanishShowcaseDiscussion = advertisementDiscussion or
+      somePhrase(text, {"que significa", "que quiere decir", "que opinan",
+          "alguien sabe", "ayer", "he leido", "he visto",
+          "me dijeron", "me contaron", "dicen que", "su anuncio",
+          "el anuncio", "anuncio dice", "hablando de",
+          "es verdad que", "no estan reclutando", "no reclutan",
+          "no buscamos miembros", "no buscamos jugadores"})
+  local spanishGuildShowcase = spanishShowcaseIdentity and
+      spanishShowcaseRaid and spanishShowcaseContact and
+      not spanishShowcaseDiscussion
+
   -- Some guild showcases advertise a raid clear record and a website
   -- without any explicit "looking for"/"recruiting" verb.  Combined guild
   -- identity + raid content + clear ratios or external homepage are enough
@@ -962,7 +1000,7 @@ local function guild(text, lower, message)
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
-       spanishGuildPromo or spanishOpenRecruitment or
+       spanishGuildPromo or spanishOpenRecruitment or spanishGuildShowcase or
        guildShowcase or timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
   if not r.intent then return r end
   if taggedSpeakerSearch then
@@ -984,6 +1022,11 @@ local function guild(text, lower, message)
   end
   if spanishOpenRecruitment then
     add(r, 20, "Spanish guild recruiting raid members")
+  end
+  if spanishGuildShowcase then
+    add(r, 12, "Spanish guild/community showcase with contact invitation")
+    add(r, 3, "members and raid/activity promotion")
+    add(r, 2, "Spanish contact call-to-action")
   end
   if timedGuildInvitation then
     add(r, 12, "guild tag + invite + raid time/timezone")

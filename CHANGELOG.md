@@ -2,6 +2,7 @@
 
 ## 1.1.0-dev — In progress
 
+- Detect Spanish guild/community showcases advertising active members and PvE/weekly raids with a contact invitation (e.g. `/whisp para info`) but omitting `reclutamos`/`buscamos`. Recognize count-suffixed raid aliases like MC25 and Kara10. Require independent guild, gameplay and contact signals; protect quoted/ordinary discussion and World-only behavior, without guild-name blacklists.
 - Fix missed Polish guild recruitment combining `szuka osób` / `szukamy graczy`, a guild tag or team identifier, and clear WoW context such as MC/raids or loot (alongside phrases like `do wspólnej gry`). Handle accented/unaccented Polish; add discussion, World-only and toggle regressions without named-guild blacklists.
 - Fix missed Swedish guild invitations with a `<Guild>` tag, **alla är välkomna**, and activities such as *levla, chilla, raida*. Require multiple invitation and gameplay signals, with quotation/discussion safeguards; fold Swedish å/Å. Do not blacklist any guild or player names. Added false-positive and World-only regressions.
 - Restyle the Statistics panel with the Dark Arcane theme, unified bronze controls, clean counters and in-panel two-step reset confirmation (no chat spam).
