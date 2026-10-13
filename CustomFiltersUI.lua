@@ -28,8 +28,11 @@ local function button(parent, title, x, y, width, onclick)
   return btn
 end
 
-local function input(parent, x, y, width)
-  local edit = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+local function input(parent, name, x, y, width)
+  -- Vanilla InputBoxTemplate uses $parentLeft / $parentMiddle / $parentRight
+  -- and anchors the middle texture to its named siblings. Every input MUST
+  -- have a unique global name or the second input can lose its center border.
+  local edit = CreateFrame("EditBox", name, parent, "InputBoxTemplate")
   edit:SetWidth(width)
   edit:SetHeight(22)
   edit:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
@@ -166,12 +169,12 @@ function WCF.BuildCustomFiltersUI()
   label(f,"GameFontNormal","Blocked Players",26,-114,240)
   label(f,"GameFontNormal","Blocked Words / Phrases",332,-114,260)
 
-  playerEntry=input(f,30,-142,175)
+  playerEntry=input(f,"WorldChatFilterBlockedPlayerInput",30,-142,175)
   playerEntry:SetMaxLetters(64)
   playerEntry:SetScript("OnEnterPressed",addPlayer)
   button(f,"Add",217,-142,65,addPlayer)
 
-  phraseEntry=input(f,336,-142,175)
+  phraseEntry=input(f,"WorldChatFilterBlockedPhraseInput",336,-142,175)
   phraseEntry:SetScript("OnEnterPressed",addPhrase)
   button(f,"Add",523,-142,65,addPhrase)
   modeButton=button(f,"Partial match",334,-172,170,function()

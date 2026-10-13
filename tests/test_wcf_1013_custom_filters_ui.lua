@@ -81,6 +81,16 @@ for _,frame in ipairs(frames) do
  if frame.kind=="Button" and frame.text=="Add" then adds[#adds+1]=frame end
 end
 assert(#edits==2 and #adds==2,"player and phrase editing controls missing")
+-- Genuine Vanilla 1.12 InputBoxTemplate has three $parent-named textures.
+-- Creating two unnamed inputs causes template anchors to collide visually.
+assert(edits[1]:GetName()=="WorldChatFilterBlockedPlayerInput",
+       "player input must have a unique global name for $parent textures")
+assert(edits[2]:GetName()=="WorldChatFilterBlockedPhraseInput",
+       "phrase input must have a distinct global name for $parent textures")
+assert(edits[1]:GetName()~=edits[2]:GetName(),
+       "both InputBoxTemplate parents must be uniquely named")
+assert(_G[edits[1]:GetName()]==edits[1] and _G[edits[2]:GetName()]==edits[2],
+       "named edit boxes should be registered as Vanilla global frames")
 edits[1]:SetText("ChatSpammer")
 adds[1].scripts.OnClick()
 assert(W.IsBlockedPlayer("chatspammer") and edits[1]:GetText()=="","GUI Add player")

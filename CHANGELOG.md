@@ -2,6 +2,7 @@
 
 ## 1.1.0-dev — In progress
 
+- Fix clipped/missing middle border in the Blocked Words / Phrases input by assigning unique global names to both Vanilla `InputBoxTemplate` edit boxes (required for `$parent` texture anchors).
 - Add custom World-only player/word/phrase filters, a paginated native settings panel, case-insensitive partial and whole-word matching, and saved per-character lists.
 - Add Block/Unblock from World Chat to the 1.12 chat player's right-click FRIEND popup without invoking Blizzard /ignore. Track custom blocks separately in statistics; the master toggle and World-only channel gate remain authoritative.
 - Add `/wcf custom`, `/wcf block player|text|word`, and `/wcf unblock player|text` commands for quick control.
