@@ -670,13 +670,14 @@ local function guild(text, lower, message)
   local plInvite = any(text, {"zapraszamy", "zaprasza", "dolacz",
       "dolaczcie", "dolaczaj", "wstap", "wstapcie"}) or
       somePhrase(text, {"dolacz do nas", "gramy razem"})
+  -- Generic "do wspolnej gry" is NOT gameplay evidence on its own:
+  -- it can advertise board games or simply hanging out.
   local plGame = raid or
       any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
           "pve", "pvp", "progres", "progress", "dungeony",
-          "levelowanie", "expienie", "loot", "sr"}) or
-      somePhrase(text, {"wspolnej gry", "wspolne granie",
-          "wspolnego grania", "wspolny progres", "wspolna gra",
-          "na rajdy", "na raidy", "na mc", "na bwl"})
+          "levelowanie", "expienie", "loot", "sr", "turtle",
+          "turtla", "wow"}) or
+      somePhrase(text, {"na rajdy", "na raidy", "na mc", "na bwl"})
   -- Exclude quoted adverts, translation questions and reports about guilds.
   local plDiscussion = somePhrase(text, {"co znaczy", "co oznacza",
       "co to znaczy", "co myslicie", "kto wie", "jaka to gildia",
