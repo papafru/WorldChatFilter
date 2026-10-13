@@ -26,6 +26,9 @@ local function mock(kind,name,parent,template)
   function f:SetFrameStrata() end
   function f:SetBackdrop(x) self.backdrop=x end
   function f:SetBackdropColor(r,g,b,a) self.backdropColor={r,g,b,a} end
+  function f:SetBackdropBorderColor(r,g,b,a) self.backdropBorderColor={r,g,b,a} end
+  function f:SetTextColor(r,g,b,a) self.textColor={r,g,b,a} end
+  function f:SetFontString(font) self.fontString=font end
   function f:SetAutoFocus() end
   function f:SetMaxLetters(x) self.maxLetters=x end
   function f:ClearFocus() self.unfocused=true end
@@ -90,35 +93,57 @@ assert(enabled and manager and type(manager.func)=="function","submenu controls 
 manager.func()
 local panel=WorldChatFilterCustomFiltersFrame
 assert(panel and panel:IsShown() and closed==1,"manager should open from dropdown")
-assert(panel.width==530 and panel.height==460,"manager must use compact layout")
+assert(panel.width==530 and panel.height==463,"manager must use compact layout")
 assert(panel.backdropColor and panel.backdropColor[4]>=0.95,
        "window background should obscure the game behind it")
-assert(panel.customState:GetText()=="Custom Filtering: ON","custom status initial")
-local tab1=_G[panel:GetName().."Tab1"]
-local tab2=_G[panel:GetName().."Tab2"]
-assert(tab1 and tab2 and tab1.template=="TabButtonTemplate"
-       and tab2.template=="TabButtonTemplate","must use genuine Vanilla tab templates")
-assert(tab1:GetText()=="Blocked Players" and tab2:GetText()=="Words & Phrases",
-       "tab captions incorrect")
-assert(resized[tab1:GetName()]==216 and resized[tab2:GetName()]==216,
-       "Blizzard tab textures must have stable widths")
-assert(panel.numTabs==2 and panel.selectedTab==1,"default tab must be Players")
+assert(panel.customState:GetText()=="Enabled","custom status initial")
+assert(panel.customState.template==nil and panel.customState.backdropBorderColor,
+       "status must be a dark custom button without the red Blizzard template")
+assert(panel.customState.wcfDot and panel.customState.wcfDot.vertex[2]>0.7,
+       "enabled indicator must be muted sage green")
+local tab1,tab2
+for _,frame in ipairs(frames) do
+ if frame.kind=="Button" and frame.text=="Blocked Players" then tab1=frame end
+ if frame.kind=="Button" and frame.text=="Words & Phrases" then tab2=frame end
+end
+assert(tab1 and tab2,"dark custom tabs missing")
+assert(tab1.template==nil and tab2.template==nil and
+       tab1.fontString and tab2.fontString and
+       tab1.backdrop and tab2.backdrop,
+       "tabs must use coherent custom Arcane styling instead of native red elements")
+assert(tab1.underline:IsShown() and not tab2.underline:IsShown(),
+       "selected tab should have a subtle gold underline")
+assert(panel.selectedTab==1,"default tab must be Players")
 local input=WorldChatFilterCustomEntryInput
 assert(input and input.template=="InputBoxTemplate" and input.maxLetters==120,
        "must use one named input to avoid Vanilla $parent texture collisions")
-local add,mode,prev,next,removes=nil,nil,nil,nil,{}
+local add,partial,whole,prev,next,removes=nil,nil,nil,nil,nil,{}
 for _,frame in ipairs(frames) do
  if frame.kind=="Button" then
-  if frame.text=="Add" then add=frame end
-  if frame.text=="Partial match" then mode=frame end
+  if frame.text=="+  Add" then add=frame end
+  if frame.text=="Partial" then partial=frame end
+  if frame.text=="Whole word" then whole=frame end
   if frame.text=="< Previous" then prev=frame end
   if frame.text=="Next >" then next=frame end
   if frame.text=="Remove" then removes[#removes+1]=frame end
  end
 end
-assert(add and mode and prev and next and #removes==6,
-       "one Add, one mode button, six remove rows and pagination controls")
-assert(not mode:IsShown(),"phrase matching mode hidden on Players tab")
+assert(add and partial and whole and prev and next and #removes==6,
+       "one Add, segmented match controls, six row buttons, and pagination required")
+assert(not partial:IsShown() and not whole:IsShown(),"matching hidden on Players tab")
+for _,frame in ipairs(frames) do
+ if frame.kind=="Button" and frame~=WorldChatFilterCustomFiltersClose then
+  assert(frame.template~= "UIPanelButtonTemplate" and frame.fontString and
+         frame.backdrop and frame.backdropBorderColor,
+         "every custom control should use the dark Arcane skin")
+ end
+end
+local firstColor=add.backdropColor
+add.scripts.OnEnter()
+assert(add.backdropColor[1]>firstColor[1],"hover should lighten Add button")
+add.scripts.OnLeave()
+assert(math.abs(add.backdropColor[1]-firstColor[1])<0.000001,
+       "hover style should restore after mouse leaves")
 local function hasLabel(fragment)
  for _,frame in ipairs(frames) do
   if frame.kind=="FontString" and string.find(frame.text,fragment,1,true) then
@@ -136,15 +161,18 @@ assert(removes[1]:IsShown(),"active row should have Remove button")
 input:SetText("unsaved value")
 tab2.scripts.OnClick()
 assert(panel.selectedTab==2 and input:GetText()=="","switching tabs clears unsafe pending entry")
-assert(mode:IsShown(),"matching mode visible for phrases")
+assert(partial:IsShown() and whole:IsShown(),"segmented matching must show on phrases")
+assert(not tab1.underline:IsShown() and tab2.underline:IsShown(),
+       "gold underline must move to active Words tab")
 assert(not hasLabel("ChatSpammer"),"Players must not appear under Words/Phrases")
 input:SetText("discord.gg")
 add.scripts.OnClick()
 assert(#W.db.blockedPhrases==1 and W.db.blockedPhrases[1].text=="discord.gg"
        and W.db.blockedPhrases[1].wholeWord==false,"partial phrase saved")
 assert(hasLabel("discord.gg") and hasLabel("[partial]"),"phrase row and match mode")
-mode.scripts.OnClick()
-assert(mode:GetText()=="Whole word","matching mode toggle should update")
+whole.scripts.OnClick()
+assert(whole.wcfSelected and not partial.wcfSelected,
+       "Whole word option must become the selected segment")
 input:SetText("Boost")
 input.scripts.OnEnterPressed()
 assert(#W.db.blockedPhrases==2 and W.db.blockedPhrases[2].wholeWord==true,
@@ -152,7 +180,8 @@ assert(#W.db.blockedPhrases==2 and W.db.blockedPhrases[2].wholeWord==true,
 assert(hasLabel("[whole word]"),"whole word matching label visible")
 -- UI changes must not silently erase the other tab's entries.
 tab1.scripts.OnClick()
-assert(panel.selectedTab==1 and not mode:IsShown(),"Players tab restored")
+assert(panel.selectedTab==1 and not partial:IsShown() and not whole:IsShown(),
+       "Players tab restored with no phrase-only controls")
 assert(hasLabel("ChatSpammer") and W.IsBlockedPlayer("ChatSpammer"),
        "player entries persist across tab switches")
 removes[1].scripts.OnClick()
@@ -183,7 +212,9 @@ assert(W.SetCustomFiltersTab("invalid")==false,"reject unknown tabs")
 enabled.func()
 assert(not W.db.customEnabled,"submenu should disable custom filtering")
 W.RefreshCustomFiltersUI()
-assert(panel.customState:GetText()=="Custom Filtering: OFF","UI should reflect submenu state")
+assert(panel.customState:GetText()=="Disabled","UI should reflect submenu state")
+assert(panel.customState.wcfDot.vertex[1]==0.67,
+       "disabled indicator should turn neutral gray")
 enabled.func()
 assert(W.db.customEnabled,"submenu should enable custom filtering")
 W.ToggleCustomFiltersUI()
@@ -192,4 +223,4 @@ W.ToggleCustomFiltersUI()
 assert(panel:IsShown(),"manager should re-open")
 assert(W.IsBlockedPlayer("Tester1") and #W.db.blockedPhrases==1,
        "all saved entries must survive window toggles")
-print("PASS v1.1 compact native tabs, player/phrase lists, word modes, pagination, opaque layout, GUI persistence")
+print("PASS v1.1 Dark Arcane skin, matching segments, player/phrase tabs, pagination, opaque layout and GUI persistence")

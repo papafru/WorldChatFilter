@@ -19,7 +19,7 @@
 - **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
 - **Statistics:** Session and all-time hidden-message counts by category, saved per character.
 - **Diagnostics:** Explain sample classifications and troubleshoot channel identification.
-- **Custom World-only filters (v1.1 dev):** Personal blocked-player and word/phrase lists managed in one compact two-tab Blizzard-style panel, partial/whole-word matching for text entries, and right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
+- **Custom World-only filters (v1.1 dev):** Personal blocked-player and word/phrase lists managed in a compact **Dark Arcane** two-tab panel with unified slate/bronze controls, Dusty Gold accents, and Partial/Whole Word matching for text entries. Right-click **Block/Unblock from World Chat** on chat player names. Nothing is added to WoW's global ignore list.
 - **No dependencies:** Works without SocialChat or external libraries.
 
 ## Compatibility
