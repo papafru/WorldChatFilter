@@ -40,9 +40,10 @@ assert(show==0 and hidden==1,"default World filter should block ad")
 show,hidden=event(ad,"Trade")
 assert(show==1 and hidden==0,"Trade must never be filtered")
 local index=#messages
+local beforeUI, beforeColor=uiRefresh,colorRefresh
 command("toggle")
 assert(W.db.enabled==false,"toggle should switch ON to OFF")
-assert(colorRefresh==1 and uiRefresh==1,"toggle should refresh color and UI")
+assert(colorRefresh==beforeColor+1 and uiRefresh==beforeUI+1,"toggle should refresh color and UI")
 assert(#messages==index+1 and string.find(messages[#messages],"World filtering: OFF",1,true),
        "toggle should report OFF in chat")
 show,hidden=event(ad,"World")
@@ -52,15 +53,17 @@ assert(show==1 and hidden==0,"General unaffected by toggle")
 assert(W.db.tintWorld==true and W.db.worldColorPreset=="sage"
   and W.db.filterServices==true and W.db.filterLFG==true and W.db.sensitivity=="balanced",
   "toggle must preserve category and color settings")
+beforeUI,beforeColor=uiRefresh,colorRefresh
 command("  ToGgLe  ")
 assert(W.db.enabled==true,"second toggle should switch OFF to ON")
-assert(colorRefresh==2 and uiRefresh==2,"second toggle should refresh color and UI")
+assert(colorRefresh==beforeColor+1 and uiRefresh==beforeUI+1,"second toggle should refresh color and UI")
 assert(string.find(messages[#messages],"World filtering: ON",1,true),
        "second toggle should report ON in chat")
 show,hidden=event(ad,"World")
 assert(show==0 and hidden==1,"filter must resume after second toggle")
+beforeUI,beforeColor=uiRefresh,colorRefresh
 command("off")
-assert(W.db.enabled==false and colorRefresh==3 and uiRefresh==3,"/wcf off regression")
+assert(W.db.enabled==false and colorRefresh==beforeColor+1 and uiRefresh==beforeUI+1,"/wcf off regression")
 command("off")
 assert(W.db.enabled==false,"/wcf off should be idempotent")
 command("toggle")
