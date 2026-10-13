@@ -122,7 +122,7 @@ function WCF.BuildStatsUI()
   local resetSession=T.Button(f,"Reset Session",31,-424,160,function()
     WCF.ResetSessionStats()
     clearConfirmation()
-  end)
+  end,false,"WorldChatFilterResetSession")
   resetAllButton=T.Button(f,"Reset All",343,-424,156,function()
     if not confirmReset then
       confirmReset=true
@@ -132,7 +132,7 @@ function WCF.BuildStatsUI()
       WCF.ResetAllStats()
       clearConfirmation()
     end
-  end,true)
+  end,true,"WorldChatFilterResetAll")
   f:SetScript("OnHide",clearConfirmation)
   return f
 end

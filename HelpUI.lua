@@ -99,6 +99,7 @@ function WCF.BuildHelpUI()
                   "World Chat Filter","HELP / COMMANDS",
                   "Available slash commands and in-game shortcuts")
   panel=f
+  f.selectedPage="general"
   tabs={
     T.Tab(f,"General",29,-116,178,function() WCF.SelectHelpPage("general") end),
     T.Tab(f,"Custom Filters",221,-116,178,function() WCF.SelectHelpPage("custom") end),

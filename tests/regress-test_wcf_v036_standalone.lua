@@ -60,6 +60,7 @@ WorldChatFilterDB={enabled=true,filterTrade=true,filterLFG=false,filterGuild=tru
 local prevDB=WorldChatFilterDB
 local base=''
 dofile(base..'Core.lua')
+dofile(base..'PanelTheme.lua')
 dofile(base..'Statistics.lua')
 dofile(base..'Classifier.lua')
 dofile(base..'Filter.lua')

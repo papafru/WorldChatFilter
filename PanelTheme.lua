@@ -44,9 +44,9 @@ function T.StyleButton(b,hover)
   T.RGB(b.wcfFont,"SetTextColor",foreground)
 end
 
-function T.Button(parent,caption,x,y,width,callback,quiet)
+function T.Button(parent,caption,x,y,width,callback,quiet,name)
   -- Plain dark button: the stock UIPanelButtonTemplate has a red texture.
-  local b=CreateFrame("Button",nil,parent)
+  local b=CreateFrame("Button",name,parent)
   b:SetWidth(width)
   b:SetHeight(25)
   b:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
