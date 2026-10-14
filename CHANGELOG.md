@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2-dev — In progress
+
+- Catch German social guild advertisements with a group/community identity, clear WoW leveling/raiding activity, casual-friendly pitch and direct contact request (e.g. `Melde dich per PM`), even without raid classes or slot counts.
+- Catch Polish guild announcements where the guild itself `rekrutuje` or `poszukuje` and describes raids, even without explicitly saying `graczy`/`osób`.
+- Combine independent signals rather than matching the featured guild names. Add quotation/denial guards and real sample + paraphrase tests for Careful/Balanced/Aggressive, World-only behavior and disabled Guild/master filters.
+
 ## 1.1.1 — 2026-10-14
 
 **Multilingual guild advertisement detection hotfix.** Builds on the official v1.1.0; no settings migration, UI changes or new dependencies. Only the World chat channel is filtered. All 39 Lua regression test files passed on the v1.1-dev branch before release.
