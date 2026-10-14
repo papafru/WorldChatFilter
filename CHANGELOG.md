@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1 — 2026-10-14
+
+**Multilingual guild advertisement detection hotfix.** Builds on the official v1.1.0; no settings migration, UI changes or new dependencies. Only the World chat channel is filtered. All 39 Lua regression test files passed on the v1.1-dev branch before release.
+
+- **Swedish:** Recognize tagged guild welcome/recruitment pitches like `Alla är välkomna` alongside gameplay activities such as `levla`, `chilla` and `raida`, including Swedish diacritics.
+- **Polish:** Recognize recruitment phrases `szuka osób` and `szukamy graczy` with guild/team and WoW context; also catch `rekrutują lvlujących i Raiderów` with Azeroth/leveling cues and `napisz do nas`. Match accented and accentless variants.
+- **Spanish:** Detect promotional guild/community showcases with active members, PvE/weekly raids (including MC25/Kara10) and calls to contact such as `/whisp para info`, even without `reclutamos`.
+- **French:** Recognize guild invitations such as `recrute tout joueur` and `nous sommes ouverts aux joueurs en lvling` alongside MC/Ony/Octo context.
+- **False-positive protections:** Require combined recruitment evidence rather than isolated words, support quoted/reported-discussion exclusions, and prevent negated `nie WoW` from counting as positive WoW context. No specific guild or player names are blacklisted.
+- **Regression coverage:** Add dedicated Swedish, Polish, Spanish and French test files, including Careful/Balanced/Aggressive, non-World channels, master and Guild toggles, own messages, and everyday conversations.
+
 ## 1.1.0 — 2026-10-13
 
 **Official v1.1 release.** All features below were developed and tested on `v1.1-dev`, with 35/35 Lua regression tests passing before publication. Only /World is filtered; existing settings, historical statistics and personal block lists are retained.

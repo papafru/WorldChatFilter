@@ -1,8 +1,8 @@
--- WorldChatFilter v1.1 development: World-only chat filter
+-- WorldChatFilter v1.1.1: World-only chat filter
 -- WoW Vanilla 1.12 API / 1.18-based clients; Lua 5.0 syntax only.
 WorldChatFilter = {}
 local WCF = WorldChatFilter
-WCF.VERSION = "1.1.0"
+WCF.VERSION = "1.1.1"
 WCF.CHANNEL = "World"
 WCF.sessionHidden = 0
 WCF.db = nil

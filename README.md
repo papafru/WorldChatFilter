@@ -1,6 +1,6 @@
 # World Chat Filter
 
-> **Latest stable release: [v1.1.0](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.0).** The experimental `v1.1-dev` branch remains separate. The v1.0.1 release is available in the [release history](https://github.com/papafru/WorldChatFilter/releases).
+> **Latest stable release: [v1.1.1](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.1).** This maintenance update improves multilingual guild-ad filtering. The experimental `v1.1-dev` branch remains separate. Earlier versions, including v1.1.0 and v1.0.1, remain available in the [release history](https://github.com/papafru/WorldChatFilter/releases).
 
 **Keep the conversation. Filter the noise.**
 
@@ -13,7 +13,7 @@
 
 - **Context-aware spam detection:** Combines advertising intent with context, rather than blocking every message containing a certain word.
 - **Ad categories:** Trade (WTS/WTB/selling), group finding (LFG/LFM, raids, elite quests), guild recruitment, services (crafting, enchants, boosts, summons/taxi), and repeated messages.
-- **Language-aware guild detection:** Curated signals from multiple languages and some transliterations. No guild names or player names are blacklisted.
+- **Language-aware guild detection:** Curated signals from multiple languages and some transliterations, improved in v1.1.1 for Swedish, Polish, Spanish and French guild ads. No guild names or player names are blacklisted.
 - **Sensitivity:** **Careful**, **Balanced** (default), or **Aggressive**.
 - **Blizzard-style settings:** Dropdown menu with toggles, a circular minimap icon, and **Shift + drag** to reposition it.
 - **World chat colors:** Optional World-only tint; four presets with swatches, plus a built-in **RGB Color Picker**. Default color: **Dusty Gold** (`#D1B77F`). The tint is local and can be disabled.
@@ -36,7 +36,7 @@
 
 **Manual installation:**
 
-1. Download **[WorldChatFilter-v1.1.0.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.1.0/WorldChatFilter-v1.1.0.zip)** from the [v1.1 GitHub Release](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.0). Use the named release asset, not the auto-generated **Source code (ZIP)**, because only the release asset comes prepackaged in a `WorldChatFilter/` folder.
+1. Download **[WorldChatFilter-v1.1.1.zip](https://github.com/papafru/WorldChatFilter/releases/download/v1.1.1/WorldChatFilter-v1.1.1.zip)** from the [v1.1.1 GitHub Release](https://github.com/papafru/WorldChatFilter/releases/tag/v1.1.1). Use the named release asset, not the auto-generated **Source code (ZIP)**, because only the release asset comes prepackaged in a `WorldChatFilter/` folder.
 2. Close WoW and extract the ZIP.
 3. Copy the **`WorldChatFilter`** directory into `World of Warcraft/Interface/AddOns/`.
 4. Make sure this file exists: `Interface/AddOns/WorldChatFilter/WorldChatFilter.toc` (no extra nesting).

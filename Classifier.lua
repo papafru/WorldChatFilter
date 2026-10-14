@@ -16,7 +16,7 @@ end
 -- is ASCII-only. Keep Cyrillic untouched for lowerLanguages() below.
 -- Map only Latin letters; avoid destroying Czech/Slovak word boundaries.
 local latinAccents = {
-  {"á","a"},{"Á","a"},{"ä","a"},{"Ä","a"},{"à","a"},{"À","a"},
+  {"á","a"},{"Á","a"},{"ä","a"},{"Ä","a"},{"å","a"},{"Å","a"},{"à","a"},{"À","a"},
   {"â","a"},{"Â","a"},{"ã","a"},{"Ã","a"},{"ą","a"},{"Ą","a"},
   {"č","c"},{"Č","c"},{"ć","c"},{"Ć","c"},{"ç","c"},{"Ç","c"},
   {"ď","d"},{"Ď","d"},{"đ","d"},{"Đ","d"},
@@ -593,6 +593,9 @@ local function guild(text, lower, message)
   local community = any(text, {"community","communities"})
   local noun = any(text, guildNouns) or community or
       string.find(lower, "гильд", 1, true) ~= nil
+  -- The tag is independent guild context; Swedish ads may use only <Name>.
+  -- Match structure, never a specific guild/player name.
+  local guildTag = string.find(message, "<[^<>]+>") ~= nil
   local roster = any(text, {"raiders","members","miembros","membros","igrokov","igroki", "players",
       "roster","rosters","rooster","roosters","healers","healer","tank","tanks","dps"}) or
       any(text, playerClasses)
@@ -629,27 +632,127 @@ local function guild(text, lower, message)
       (csSearch and csPeople and csGameContext) or
       (csStrongInvite and csPeople and csGameContext) or
       (csInvitation and csSearch and csPeople)
-  -- Swedish invitations: the guild advertisement may never say "recruiting".
-  -- Treat welcome-to-all-role language + guild and raid/promotional context
-  -- as an invitation, not the word "guild" alone.
-  local swInvite, swPromo, swRecruitment = false, false, false
-  if noun then
-    swInvite = somePhrase(text, {"alla roller ar valkomna", "alla ar valkomna",
-        "alla klasser ar valkomna", "vi soker", "soker spelare", "soker fler",
-        "vi rekryterar", "vi valkomnar", "vill du joina", "vill du raida",
-        "hor av dig", "valkommen till var guild"})
-    if swInvite then
-      swPromo = somePhrase(text, {"serverns basta", "svenska guild",
-          "raids pa farm", "vi raider", "vill du", "alla roller"})
-      if raid or swPromo or roster then
-        local swDiscussion = somePhrase(text, {"the guild says", "my guild says",
-            "our guild says", "their guild says", "guild said", "guild says",
-            "what does", "someone said", "i heard", "does anyone know",
-            "the phrase"})
-        swRecruitment = not swDiscussion
-      end
-    end
+  -- Swedish recruitment can advertise a tagged <Guild> without ever saying
+  -- "guild" or "recruiting": "Levla, chilla eller raida? Alla ar valkomna".
+  -- Require independent evidence: guild tag/noun, invitation and an activity
+  -- pitch. These are WORD signals, never names or unrestricted substrings.
+  local swInvite = somePhrase(text, {"alla roller ar valkomna", "alla ar valkomna",
+      "alla klasser ar valkomna", "vi soker", "soker spelare", "soker fler",
+      "vi rekryterar", "vi valkomnar", "vill du joina", "vill du raida",
+      "hor av dig", "valkommen till var guild"})
+  local swPromo = somePhrase(text, {"serverns basta", "svenska guild",
+      "raids pa farm", "vi raider", "vill du", "allt fran"})
+  local swActivity = any(text, {"levla", "levlar", "levela", "levelar",
+      "lvla", "chilla", "chillar", "raida", "raidar", "raider",
+      "raid", "raids", "raiding", "pve", "pvp", "dungeon", "dungeons"})
+  -- Avoid mistaking quotations, translation requests or guild reports for ads.
+  local swDiscussion = somePhrase(text, {"the guild says", "my guild says",
+      "our guild says", "their guild says", "guild said", "guild says",
+      "what does", "someone said", "i heard", "does anyone know",
+      "the phrase", "vad betyder", "vad menas", "hur sager man",
+      "jag horde", "jag laste", "jag sag", "jag undrar",
+      "skrev att", "sager att", "sa att", "pratade om", "igar"})
+  local swRecruitment = (noun or guildTag) and swInvite and
+      (raid or roster or
+       (noun and swPromo) or (guildTag and swActivity)) and
+      not swDiscussion
+
+  -- Polish recruitment: require player search/invitation + named group +
+  -- independent WoW gameplay context. No blacklisted guild or player names.
+  local plSearch = any(text, {"szuka", "szukamy", "szukaja", "poszukuje",
+      "poszukujemy", "poszukuja", "rekrutuje", "rekrutujemy",
+      "rekrutuja", "przyjmujemy", "nabor"})
+  local plPeople = any(text, {"osob", "osoby", "graczy", "gracza",
+      "ludzi", "czlonkow", "czlonka", "raiderow", "raidera",
+      "aktywnych", "chetnych", "healerow", "tankow",
+      "lvlujacych", "levelujacych", "levelujacy", "lvlujacy",
+      "expijacych", "raidujacych"})
+  local plTeam = any(text, {"gildia", "gildii", "druzyna", "druzyny",
+      "ekipa", "ekipy", "klan", "klanu", "spolecznosc"})
+  local plInvite = any(text, {"zapraszamy", "zaprasza", "dolacz",
+      "dolaczcie", "dolaczaj", "wstap", "wstapcie"}) or
+      somePhrase(text, {"dolacz do nas", "gramy razem"})
+  -- "Do wspolnej zabawy/gry" alone is not proof of a WoW recruitment ad.
+  -- Also avoid counting an explicitly NEGATED "WoW" ("nie WoW", "not WoW")
+  -- as the gameplay signal for an otherwise unrelated group invitation.
+  local plWow = contains(text, "wow") and not somePhrase(text, {
+      "nie wow", "nie w wow", "nie do wow", "to nie wow",
+      "nie chodzi o wow", "zamiast wow", "not wow", "not about wow"})
+  local plGame = raid or plWow or
+      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
+          "pve", "pvp", "progres", "progress", "dungeony",
+          "levelowanie", "expienie", "loot", "sr", "turtle",
+          "turtla", "azeroth", "azerothu", "lvlowanie",
+          "lvlowania", "levelowania", "lvlujacych",
+          "levelujacych", "expijacych"}) or
+      somePhrase(text, {"na rajdy", "na raidy", "na mc", "na bwl"})
+  -- Exclude quoted adverts, translation questions and reports about guilds.
+  local plDiscussion = somePhrase(text, {"co znaczy", "co oznacza",
+      "co to znaczy", "co myslicie", "kto wie", "jaka to gildia",
+      "slyszalem ze", "slyszalam ze", "czytalem ze",
+      "czytalam ze", "ktos powiedzial", "widziales ze",
+      "widzieliscie ze", "wczoraj", "kiedys", "cytuje",
+      "pytam tylko", "pytanie o", "mowili ze",
+      "czy ta gildia", "czy ten klan", "czy ktos wie",
+      "widzalem ogloszenie", "widzialem ogloszenie",
+      "widziales ogloszenie", "ogloszenie mowi",
+      "ogloszenie pisze", "to cytat z"}) or
+      string.find(text, "^ czy ") ~= nil
+  local plRecruitment = (guildTag or plTeam or noun) and plGame and
+      ((plSearch and plPeople) or (plInvite and (guildTag or plTeam))) and
+      not plDiscussion
+
+  -- French guild recruitment frequently says "recrute tout joueur" or
+  -- "nous sommes ouverts aux joueurs en lvling" rather than English role
+  -- terms. A strong advertisement must combine guild identity, a recruitment
+  -- action, a player audience, and independent WoW activity/context.
+  -- Never key off the guild's name or a single French word.
+  local frGroup = guildTag or noun or
+      any(text, {"guilde", "guildes", "communaute", "clan"})
+  local frRecruit = any(text, {"recrute", "recrutons", "recrutent",
+      "recrutement", "recrutements", "recherchons", "recherche",
+      "recherchent", "cherchons", "cherchent", "accueillons",
+      "accueille", "accueillent", "acceptons", "rejoignez"}) or
+      somePhrase(text, {"nous sommes ouverts", "nous sommes ouvertes",
+          "sommes ouverts aux", "sommes ouvertes aux",
+          "ouvert aux nouveaux", "ouverte aux nouveaux",
+          "venez nous rejoindre", "rejoignez nous", "bienvenue a tous"})
+  local frPeople = any(text, {"joueur", "joueurs", "membre", "membres",
+      "raideur", "raideurs", "debutant", "debutants", "nouveaux",
+      "nouvelles", "aventurier", "aventuriers", "personnes",
+      "levelers", "lvling"}) or
+      somePhrase(text, {"tout joueur", "tous les joueurs",
+          "aux joueurs", "pour les joueurs", "tous niveaux",
+          "tous les niveaux", "joueurs en leveling"})
+  local frGame = raid or
+      any(text, {"octo", "octowow", "wow", "turtle", "pve", "pvp",
+          "raids", "raid", "leveling", "lvling", "donjon", "donjons",
+          "quetes", "progression", "onyxia", "levelup"}) or
+      somePhrase(text, {"contenu d octo", "contenu qu offre octo",
+          "molten core", "ony clean", "mc clean", "en cours de leveling"})
+  -- Reports, translations and questions containing a quoted recruitment
+  -- sentence should stay visible, even when they name a tagged guild.
+  local frDiscussion = string.find(message, "?", 1, true) ~= nil or
+      somePhrase(text, {"est ce que", "quelqu un sait", "vous savez si",
+          "savez vous si", "je me demande", "que signifie",
+          "que veut dire", "qu est ce que", "qu en pensez vous",
+          "j ai entendu", "j ai lu", "j ai vu", "on m a dit",
+          "m a dit", "il parait que", "on dit que", "disent que",
+          "le message dit que", "un message dit que", "ce message dit que",
+          "sa pub dit que", "un joueur a dit que",
+          "a dit que", "selon", "hier", "la semaine derniere",
+          "je cite", "ils ont annonce", "leur annonce",
+          "dans leur annonce", "ne recrute pas", "ne recrutent pas",
+          "plus de recrutement", "recrutement ferme"})
+  local frRecruitment = frGroup and frRecruit and frPeople and frGame and
+      not frDiscussion
+  -- A quoted French advertisement must not leak through the generic English
+  -- score path (recrute + raid + message/contact). Only short-circuit when
+  -- all four French-specific recruitment signals are present in a *report*.
+  if frDiscussion and frGroup and frRecruit and frPeople and frGame then
+    return r
   end
+
   -- Latin-script Russian recruitment: common spellings vary (ishet/ishchet,
   -- ishem/ischem, sobiraem/sobirayem, ...).  This is a COMBINATION rule,
   -- not a blacklist of specific messages or guild names. Require a search
@@ -847,7 +950,6 @@ local function guild(text, lower, message)
   -- Tagged guild recruiting is not necessarily a scheduled weekly roster.
   -- Recognize player/class search with optional adverbs, and Spanish
   -- community announcements like "comunidad activa ... te esperamos".
-  local guildTag = string.find(message, "<[^<>]+>") ~= nil
   local taggedSpeakerSearch = guildTag and hasSpeakerSearch(text)
   -- Direct invitations may advertise a named guild without using "recruiting",
   -- LFM or player-role requests: "Join THE CULT, we're a social guild".
@@ -895,6 +997,44 @@ local function guild(text, lower, message)
   local spanishOpenRecruitment = guildTag and spanishRecruiting and
       any(text, {"miembros", "jugadores", "players", "members"}) and
       (raid or discord or spanishCommunity) and not advertisementDiscussion
+
+  -- Spanish guild showcases may omit "buscamos"/"reclutamos". Three independent
+  -- signals must co-occur: (1) named guild + community/member pitch;
+  -- (2) WoW raid/activity, including count-suffixed MC25/Kara10;
+  -- (3) explicit contact request such as "/whisp para info".
+  -- Never match named guilds themselves; single tokens cannot trigger this.
+  local spanishShowcaseIdentity = (guildTag or
+      any(text, {"gremio", "hermandad", "guild", "gilda"})) and
+      (spanishCommunity or any(text, {"gremio", "hermandad"})) and
+      any(text, {"miembros", "jugadores", "raiders", "integrantes"})
+  local spanishShowcaseRaid = raid or
+      any(text, {"raids", "raideo", "raideos", "pve", "pvp", "progresion",
+          "progreso", "trash", "runs"}) or
+      string.find(text, " mc%d+ ") ~= nil or
+      string.find(text, " kara%d+ ") ~= nil or
+      string.find(text, " zg%d+ ") ~= nil
+  local spanishShowcaseContact = somePhrase(text, {
+      "whisp para info", "wisp para info", "whisper para info",
+      "susurro para info", "susurrame para info",
+      "escribeme para info", "escribenos para info",
+      "mensaje para info", "pm para info", "whisp para detalles",
+      "whisper para detalles", "contactanos para info",
+      "whisp para mas info", "manda whisp", "mandame whisper"
+    }) or (any(text, {"whisp", "wisp", "whisper", "susurro",
+            "susurrame"}) and
+        somePhrase(text, {"para informacion", "mas informacion",
+            "para detalles", "para unirte"}))
+  local spanishShowcaseDiscussion = advertisementDiscussion or
+      somePhrase(text, {"que significa", "que quiere decir", "que opinan",
+          "alguien sabe", "ayer", "he leido", "he visto",
+          "me dijeron", "me contaron", "dicen que", "su anuncio",
+          "el anuncio", "anuncio dice", "hablando de",
+          "es verdad que", "no estan reclutando", "no reclutan",
+          "no buscamos miembros", "no buscamos jugadores"})
+  local spanishGuildShowcase = spanishShowcaseIdentity and
+      spanishShowcaseRaid and spanishShowcaseContact and
+      not spanishShowcaseDiscussion
+
   -- Some guild showcases advertise a raid clear record and a website
   -- without any explicit "looking for"/"recruiting" verb.  Combined guild
   -- identity + raid content + clear ratios or external homepage are enough
@@ -919,11 +1059,11 @@ local function guild(text, lower, message)
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
-      csRecruitment or softRecruitment or swRecruitment or ruRecruitment or
+      csRecruitment or softRecruitment or swRecruitment or plRecruitment or frRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
-       spanishGuildPromo or spanishOpenRecruitment or
+       spanishGuildPromo or spanishOpenRecruitment or spanishGuildShowcase or
        guildShowcase or timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
   if not r.intent then return r end
   if taggedSpeakerSearch then
@@ -945,6 +1085,11 @@ local function guild(text, lower, message)
   end
   if spanishOpenRecruitment then
     add(r, 20, "Spanish guild recruiting raid members")
+  end
+  if spanishGuildShowcase then
+    add(r, 12, "Spanish guild/community showcase with contact invitation")
+    add(r, 3, "members and raid/activity promotion")
+    add(r, 2, "Spanish contact call-to-action")
   end
   if timedGuildInvitation then
     add(r, 12, "guild tag + invite + raid time/timezone")
@@ -999,8 +1144,21 @@ local function guild(text, lower, message)
     if ruContext then add(r, 2, "guild/raid/level context") end
   end
   if swRecruitment then
-    add(r, 5, "Swedish invitation/recruitment")
-    if swPromo then add(r, 3, "Swedish promotional context") end
+    add(r, 10, "Swedish guild invitation/recruitment")
+    if guildTag then add(r, 2, "guild tag with Swedish invitation") end
+    if swActivity then add(r, 3, "Swedish gameplay/raid activity") end
+    if swPromo then add(r, 2, "Swedish promotional context") end
+  end
+  if plRecruitment then
+    add(r, 12, "Polish guild/team recruiting players for gameplay")
+    if plSearch and plPeople then add(r, 3, "Polish player/member search") end
+    if plTeam or guildTag then add(r, 2, "Polish guild/team identity") end
+    if plInvite then add(r, 2, "Polish invitation") end
+  end
+  if frRecruitment then
+    add(r, 12, "French guild recruiting players")
+    add(r, 3, "French player/audience invitation")
+    if guildTag then add(r, 2, "tagged guild advertising WoW content") end
   end
   if csRecruitment then
     if csSearch then add(r, 4, "Czech/Slovak recruitment intent") end
