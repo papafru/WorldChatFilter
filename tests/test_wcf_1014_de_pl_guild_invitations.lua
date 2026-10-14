@@ -26,7 +26,7 @@ local germanAds={
  "<Nordwind> Wir sind eine soziale Gilde für Casuals. Gemeinsame Raids und Leveln, schreib uns eine PM!",
  "<Morgenrot> Deutsche Community auf OctoWoW, wir machen Raids und nehmen neue Spieler auf. Melde dich bei uns!",
  "<Mondfels> Entspannte Gilde, casuals willkommen, wir helfen beim leveln. Schreib mir für mehr Infos.",
- "<Wolken>" Wir suchen Mitspieler für unsere Gilde auf OctoWoW, gemeinsame Raids, bitte PM!",
+ "<Wolken> Wir suchen Mitspieler für unsere Gilde auf OctoWoW, gemeinsame Raids, bitte PM!",
  "<Steinwald> Du suchst eine lockere Gilde? Wir raiden und leveln zusammen. Meld dich per Whisper.",
 }
 local polishAds={
