@@ -726,12 +726,20 @@ local function guild(text, lower, message)
           "que veut dire", "qu est ce que", "qu en pensez vous",
           "j ai entendu", "j ai lu", "j ai vu", "on m a dit",
           "m a dit", "il parait que", "on dit que", "disent que",
+          "le message dit que", "un message dit que", "ce message dit que",
+          "sa pub dit que", "un joueur a dit que",
           "a dit que", "selon", "hier", "la semaine derniere",
           "je cite", "ils ont annonce", "leur annonce",
           "dans leur annonce", "ne recrute pas", "ne recrutent pas",
           "plus de recrutement", "recrutement ferme"})
   local frRecruitment = frGroup and frRecruit and frPeople and frGame and
       not frDiscussion
+  -- A quoted French advertisement must not leak through the generic English
+  -- score path (recrute + raid + message/contact). Only short-circuit when
+  -- all four French-specific recruitment signals are present in a *report*.
+  if frDiscussion and frGroup and frRecruit and frPeople and frGame then
+    return r
+  end
 
   -- Latin-script Russian recruitment: common spellings vary (ishet/ishchet,
   -- ishem/ischem, sobiraem/sobirayem, ...).  This is a COMBINATION rule,
