@@ -672,14 +672,17 @@ local function guild(text, lower, message)
   local plInvite = any(text, {"zapraszamy", "zaprasza", "dolacz",
       "dolaczcie", "dolaczaj", "wstap", "wstapcie"}) or
       somePhrase(text, {"dolacz do nas", "gramy razem"})
-  -- "Do wspolnej zabawy/gry" by itself is not gameplay evidence (it might
-  -- be a board-game chat). WoW setting names and Polish leveling inflections
-  -- are independent context for a strong guild+player recruitment message.
-  local plGame = raid or
+  -- "Do wspolnej zabawy/gry" alone is not proof of a WoW recruitment ad.
+  -- Also avoid counting an explicitly NEGATED "WoW" ("nie WoW", "not WoW")
+  -- as the gameplay signal for an otherwise unrelated group invitation.
+  local plWow = contains(text, "wow") and not somePhrase(text, {
+      "nie wow", "nie w wow", "nie do wow", "to nie wow",
+      "nie chodzi o wow", "zamiast wow", "not wow", "not about wow"})
+  local plGame = raid or plWow or
       any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
           "pve", "pvp", "progres", "progress", "dungeony",
           "levelowanie", "expienie", "loot", "sr", "turtle",
-          "turtla", "wow", "azeroth", "azerothu", "lvlowanie",
+          "turtla", "azeroth", "azerothu", "lvlowanie",
           "lvlowania", "levelowania", "lvlujacych",
           "levelujacych", "expijacych"}) or
       somePhrase(text, {"na rajdy", "na raidy", "na mc", "na bwl"})

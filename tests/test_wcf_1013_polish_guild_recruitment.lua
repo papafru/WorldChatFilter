@@ -41,6 +41,8 @@ local ordinary={
  "Widzialem ogloszenie: <Wschodnia Straz> rekrutuja lvlujacych do Azeroth.",
  "To cytat z chatu: <Wschodnia Straz> rekrutuja raiderow do Azeroth!",
  "Gildia <Wschodnia Straz> rekrutuje graczy do gry w szachy, nie WoW.",
+ "Ekipa rekrutuje graczy do planszowek, to nie WoW.",
+ "<Niebiescy> rekrutuja raiderow do gry w karty, nie w WoW.",
  "MC sobota 20, a loot ma byc SR+?",
  "Jak wyglada progres w MC w sobote?",
  "<Ostatni Bastion> to ciekawa nazwa gildii.",
