@@ -56,7 +56,7 @@ for _,file in ipairs({'Core.lua','Color.lua','Statistics.lua','Classifier.lua','
 end
 local W = WorldChatFilter
 W.Initialize()
-assert(W.VERSION == '1.1.0-dev')
+assert(W.VERSION == '1.1.1')
 assert(W.db.minimapAngle == 235)
 assert(W.GetWorldColorPreset() == 'gold')
 assert(W.GetWorldColorHex() == '#D1B77F')

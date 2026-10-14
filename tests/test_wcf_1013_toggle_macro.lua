@@ -18,7 +18,7 @@ WorldChatFilterDB = {
 for _,file in ipairs({"Core.lua","Statistics.lua","Classifier.lua","Filter.lua"}) do dofile(file) end
 local W = WorldChatFilter
 W.Initialize()
-assert(W.VERSION == "1.1.0-dev", "development version must be distinct from stable")
+assert(W.VERSION == "1.1.1", "stable hotfix version must match the release")
 local db = W.db
 local colorRefresh,uiRefresh = 0,0
 W.RefreshWorldColor=function() colorRefresh=colorRefresh+1 end

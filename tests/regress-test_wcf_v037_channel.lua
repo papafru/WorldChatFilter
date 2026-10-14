@@ -14,7 +14,7 @@ dofile(root..'Classifier.lua')
 dofile(root..'Filter.lua')
 WorldChatFilter.Initialize()
 local WCF=WorldChatFilter
-assert(WCF.VERSION=='1.1.0-dev')
+assert(WCF.VERSION=='1.1.1')
 local spam='WTS Arcanum of Rapidity 55G LEGS/HEAD ENCHANT'
 local lf='LFM ZG12 - Need OT and 1x Heal - 1SR>MS>OS'
 local tg='One of Turtle WoW top speedrun guilds, now looking for Mages/Shamans/Warlocks for our main rooster! https://discord.gg/99VREUC4P for more information!'

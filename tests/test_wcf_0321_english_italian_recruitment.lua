@@ -15,7 +15,7 @@ for _,file in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}
 end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter
-assert(W.VERSION=='1.1.0-dev')
+assert(W.VERSION=='1.1.1')
 local adverts = {
   -- Exact real-world screenshot message (content only, without channel header).
   '{RU}-{SNG} Guild "One Blood" looking for ru speaking players to farm PvP/PvE >no rush|chill and positive vibe <3 full content on farm 50+ online every evening!',

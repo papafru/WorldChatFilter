@@ -1,7 +1,8 @@
 name: Publish WorldChatFilter v1.1.1
 
 # One-shot stable hotfix. Only the addition of this workflow on main
-# triggers publishing; future source or documentation commits do not.
+# triggers publishing; this retry includes corrected stable-version test assertions.
+# The workflow still refuses to overwrite an already-published release.
 on:
   push:
     branches: [main]
