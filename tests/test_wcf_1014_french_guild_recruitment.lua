@@ -47,7 +47,7 @@ local ordinary={
  "<La Clairiere> Nous sommes ouverts aux joueurs qui souhaitent discuter de leveling?",
  "La guilde <Le Havre> ne recrute pas de joueurs sur Octo.",
  "Est-ce que <Le Dragon> recrute des joueurs pour MC?",
- "Une guilde recrute de nouveaux joueurs pour un tournoi d'echecs.",
+ "Une guilde discute de nouveaux joueurs lors d'un tournoi d'echecs.",
  "Le message dit que <Ost Ardent> recrute des joueurs pour MC.",
  "Un joueur recrute son ami pour un jeu de cartes.",
 }
