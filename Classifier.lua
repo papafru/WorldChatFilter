@@ -664,19 +664,24 @@ local function guild(text, lower, message)
       "rekrutuja", "przyjmujemy", "nabor"})
   local plPeople = any(text, {"osob", "osoby", "graczy", "gracza",
       "ludzi", "czlonkow", "czlonka", "raiderow", "raidera",
-      "aktywnych", "chetnych", "healerow", "tankow"})
+      "aktywnych", "chetnych", "healerow", "tankow",
+      "lvlujacych", "levelujacych", "levelujacy", "lvlujacy",
+      "expijacych", "raidujacych"})
   local plTeam = any(text, {"gildia", "gildii", "druzyna", "druzyny",
       "ekipa", "ekipy", "klan", "klanu", "spolecznosc"})
   local plInvite = any(text, {"zapraszamy", "zaprasza", "dolacz",
       "dolaczcie", "dolaczaj", "wstap", "wstapcie"}) or
       somePhrase(text, {"dolacz do nas", "gramy razem"})
-  -- Generic "do wspolnej gry" is NOT gameplay evidence on its own:
-  -- it can advertise board games or simply hanging out.
+  -- "Do wspolnej zabawy/gry" by itself is not gameplay evidence (it might
+  -- be a board-game chat). WoW setting names and Polish leveling inflections
+  -- are independent context for a strong guild+player recruitment message.
   local plGame = raid or
       any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
           "pve", "pvp", "progres", "progress", "dungeony",
           "levelowanie", "expienie", "loot", "sr", "turtle",
-          "turtla", "wow"}) or
+          "turtla", "wow", "azeroth", "azerothu", "lvlowanie",
+          "lvlowania", "levelowania", "lvlujacych",
+          "levelujacych", "expijacych"}) or
       somePhrase(text, {"na rajdy", "na raidy", "na mc", "na bwl"})
   -- Exclude quoted adverts, translation questions and reports about guilds.
   local plDiscussion = somePhrase(text, {"co znaczy", "co oznacza",
@@ -684,7 +689,11 @@ local function guild(text, lower, message)
       "slyszalem ze", "slyszalam ze", "czytalem ze",
       "czytalam ze", "ktos powiedzial", "widziales ze",
       "widzieliscie ze", "wczoraj", "kiedys", "cytuje",
-      "pytam tylko", "pytanie o", "mowili ze"}) or
+      "pytam tylko", "pytanie o", "mowili ze",
+      "czy ta gildia", "czy ten klan", "czy ktos wie",
+      "widzalem ogloszenie", "widzialem ogloszenie",
+      "widziales ogloszenie", "ogloszenie mowi",
+      "ogloszenie pisze", "to cytat z"}) or
       string.find(text, "^ czy ") ~= nil
   local plRecruitment = (guildTag or plTeam or noun) and plGame and
       ((plSearch and plPeople) or (plInvite and (guildTag or plTeam))) and

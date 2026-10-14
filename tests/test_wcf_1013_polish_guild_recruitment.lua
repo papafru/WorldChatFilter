@@ -18,6 +18,10 @@ local W=WorldChatFilter
 W.Initialize()
 
 local adverts={
+ "<CHŁOPAKI Z BARRENSOW> rekrutują lvlujących i Raiderow do wspólnej zabawy w Azeroth. Oferujemy pomoc i luźną atmosferę. Jesteś zainteresowany? Napisz do nas!",
+ "<Wschodnia Straz> Rekrutujemy lvlujacych i raiderow do wspolnej zabawy w Azeroth. Napisz do nas!",
+ "<Błękitny Szlak> Rekrutują levelujących do rajdów w Azeroth, zapraszamy!",
+ "Gildia <Błękitni> szuka lvlujących do gry w Azeroth, napisz do nas.",
  "<Ostatni Bastion> doswiadczona druzyna z turtla szuka osob do wspolnej gry, MC sobota 20. Loot SR+. Wspólny progres, minimalne zaangazowanie wymagane.",
  "<Przystan> doświadczona drużyna szuka osób do wspólnej gry, MC sobota 20. Loot SR+.",
  "<New Beginning> szukamy graczy do wspolnej gry, rajdy i progres na Turtle.",
@@ -29,6 +33,14 @@ local adverts={
  "<Zmierzch> Zapraszamy na rajdy, wspolny progres i PVP.",
 }
 local ordinary={
+ "Lubie Azeroth, a lvlujacych jest tu dzisiaj bardzo duzo.",
+ "Jestes zainteresowany wspolna zabawa w planszowki? Napisz do nas!",
+ "<Błękitni> oferuja pomoc i luzna atmosfere. Napisz do nas!",
+ "Czy ta gildia <Wschodnia Straz> rekrutuje lvlujacych do Azeroth?",
+ "Czytałem że <Błękitny Szlak> rekrutują lvlujących i Raiderow w Azeroth.",
+ "Widzialem ogloszenie: <Wschodnia Straz> rekrutuja lvlujacych do Azeroth.",
+ "To cytat z chatu: <Wschodnia Straz> rekrutuja raiderow do Azeroth!",
+ "Gildia <Wschodnia Straz> rekrutuje graczy do gry w szachy, nie WoW.",
  "MC sobota 20, a loot ma byc SR+?",
  "Jak wyglada progres w MC w sobote?",
  "<Ostatni Bastion> to ciekawa nazwa gildii.",
