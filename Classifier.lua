@@ -186,7 +186,7 @@ local merchandise = {"gold","g","mats","materials","herbs","herb","ore","ores","
  "recipe","recipes","mount","mounts","stack","stacks","enchants","enchant","cloth","potions","potion"}
 local services = {"boost","boosts","boosting","carry","carries","carrying","summon","summons","summoning",
  "portal","portals","transport","powerlevel","powerleveling","powerlevelling","crafting","enchanting"}
-local contact = {"pst","whisper","whisp","pm","wisp","message","dm","/w"}
+local contact = {"pst","whisper","whisp","pm","pn","wisp","message","dm","/w"}
 local recruit = {"recruiting","recruitment","recruits","applicants",
  "rekrutiert","rekrutieren","rekrutierung","recrute","recrutement","recluta","reclutando"}
 local guildNouns = {"guild","guilds","gilde","gilden","guilde","gildia","static","roster"}
@@ -679,7 +679,8 @@ local function guild(text, lower, message)
       "nie wow", "nie w wow", "nie do wow", "to nie wow",
       "nie chodzi o wow", "zamiast wow", "not wow", "not about wow"})
   local plGame = raid or plWow or
-      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
+      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidy", "raidami",
+          "raidach", "rajdami", "rajdach", "raidowanie",
           "pve", "pvp", "progres", "progress", "dungeony",
           "levelowanie", "expienie", "loot", "sr", "turtle",
           "turtla", "azeroth", "azerothu", "lvlowanie",
@@ -696,11 +697,26 @@ local function guild(text, lower, message)
       "czy ta gildia", "czy ten klan", "czy ktos wie",
       "widzalem ogloszenie", "widzialem ogloszenie",
       "widziales ogloszenie", "ogloszenie mowi",
-      "ogloszenie pisze", "to cytat z"}) or
+      "ogloszenie pisze", "to cytat z",
+      "widzialem ze", "widzialam ze", "widzielismy ze",
+      "czy gildia", "czy polska gildia", "wiecie czy",
+      "nie szukamy", "nie rekrutuje", "nie rekrutujemy",
+      "nie przyjmujemy", "nie poszukujemy"}) or
       string.find(text, "^ czy ") ~= nil
   local plRecruitment = (guildTag or plTeam or noun) and plGame and
       ((plSearch and plPeople) or (plInvite and (guildTag or plTeam))) and
       not plDiscussion
+  -- A Polish guild can announce its own recruitment without explicitly
+  -- saying "players": "Polska gildia X rekrutuje. Robimy rajdy". The subject
+  -- (gildia/gildii), direct recruitment verb, and WoW activity must all be
+  -- present. A name or generic "rajdy" in conversation never suffices.
+  local plDirectRecruit = any(text, {"rekrutuje", "rekrutuja",
+      "rekrutujemy", "rekrutacja", "poszukuje", "poszukujemy",
+      "przyjmuje", "przyjmujemy", "nabor", "nabory"})
+  local plGuildSubject = any(text, {"gildia", "gildii", "guild"}) or
+      (guildTag and plTeam)
+  local plGuildAnnouncement = plGuildSubject and plDirectRecruit and
+      plGame and not plDiscussion
 
   -- French guild recruitment frequently says "recrute tout joueur" or
   -- "nous sommes ouverts aux joueurs en lvling" rather than English role
@@ -888,6 +904,53 @@ local function guild(text, lower, message)
   local germanRaidRecruitment = germanSearch and germanRoles and
       (germanOpenSlots or (raid and germanCountedSlot) or germanTimedRaid) and
       not germanDiscussion
+
+  -- Social/community guild ads may invite casuals and levelers without
+  -- advertising numbered raid spots. Require independent group identity,
+  -- WoW gameplay, a promotional pitch, and a clear contact / join request
+  -- (or an explicit member search). Do not classify ordinary references
+  -- to raiding, a community or a lone "PM" as recruitment.
+  local deGuild = guildTag or noun or
+      any(text, {"gilde", "gilden", "gemeinschaft"})
+  local deGameplay = raid or
+      any(text, {"octowow", "turtle", "wow", "leveln", "leveling",
+          "lvln", "raiden", "raide", "pve", "pvp", "dungeons",
+          "dungeon", "questen", "quests"})
+  local dePitch = any(text, {"community", "gemeinschaft", "casuals",
+      "entspannte", "entspannt", "entspannten",
+      "gemutlich", "gemutliche", "gemutlichen",
+      "gemeinsam", "gemeinsame", "gemeinsamen", "zusammen",
+      "freundlich", "locker", "lockere", "lockeren",
+      "sozial", "hilfsbereit"}) or
+      somePhrase(text, {"kein stress", "kein hardcore",
+          "wir helfen", "neue spieler", "raids geplant"})
+  local deContactVerb = somePhrase(text, {"melde dich", "meld dich",
+      "meldet euch", "schreib uns", "schreib mir", "schreibt uns",
+      "schreibt mir", "kontaktiere uns", "kontaktiert uns"})
+  local deContactMeans = any(text, {"pm", "pn", "whisper", "wisp"}) or
+      somePhrase(text, {"bei uns", "bei mir", "fur mehr infos",
+          "fur mehr informationen", "fur infos", "fur eine einladung",
+          "fur einladung", "um mitzumachen"})
+  local deContact = deContactVerb and deContactMeans
+  local deSearch = any(text, {"suchen", "suche", "sucht", "gesucht",
+      "rekrutieren", "rekrutiert", "rekrutierung"}) or
+      somePhrase(text, {"nehmen neue spieler auf",
+          "neue spieler aufnehmen", "spieler willkommen"})
+  local deAudience = any(text, {"mitspieler", "spieler", "mitglieder",
+      "raider", "raiders", "casuals", "neulinge", "anfanger"})
+  -- A rhetorical "Lust auf Community?" inside an advert is not discussion,
+  -- but a quoted recruitment ad, information request, or denial is.
+  local deDiscussion = germanDiscussion or
+      somePhrase(text, {"was bedeutet", "was heisst", "was ist",
+          "wie findet ihr", "wie kann ich", "wisst ihr ob",
+          "ist das eine werbung", "in der anzeige", "in der werbung",
+          "stand im text", "im text", "ich zitiere", "nur ein zitat",
+          "ich habe gelesen", "ich habe gehort", "hat gesagt",
+          "nicht fur wow", "nicht fur eine gilde",
+          "keine neuen mitglieder", "wir rekrutieren nicht"})
+  local deSocialInvitation = deGuild and deGameplay and dePitch and
+      (deContact or (deSearch and deAudience)) and not deDiscussion
+
   -- Recruitment of named classes for a *recurring raid roster*. Require
   -- independent signals (player search + class, raid + weekly scheduling,
   -- organization/progression, and an invitation to contact the recruiter).
@@ -1059,10 +1122,11 @@ local function guild(text, lower, message)
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
-      csRecruitment or softRecruitment or swRecruitment or plRecruitment or frRecruitment or ruRecruitment or
+      csRecruitment or softRecruitment or swRecruitment or plRecruitment or
+       plGuildAnnouncement or frRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
-       germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
+       germanRaidRecruitment or deSocialInvitation or taggedClassRecruitment or taggedOpenRecruitment or
        spanishGuildPromo or spanishOpenRecruitment or spanishGuildShowcase or
        guildShowcase or timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
   if not r.intent then return r end
@@ -1132,6 +1196,11 @@ local function guild(text, lower, message)
     if germanOpenSlots then add(r, 3, "open raid places") end
     if germanTimedRaid then add(r, 15, "scheduled raid time + German recruiter") end
   end
+  if deSocialInvitation then
+    add(r, 16, "German social guild inviting players")
+    if deContact then add(r, 2, "direct German contact invitation") end
+    if deSearch and deAudience then add(r, 2, "German player recruitment") end
+  end
   if softRecruitment then
     add(r, 5, "guild-style invitation call-to-action")
     add(r, 4, "promotional community language")
@@ -1154,6 +1223,10 @@ local function guild(text, lower, message)
     if plSearch and plPeople then add(r, 3, "Polish player/member search") end
     if plTeam or guildTag then add(r, 2, "Polish guild/team identity") end
     if plInvite then add(r, 2, "Polish invitation") end
+  end
+  if plGuildAnnouncement then
+    add(r, 14, "Polish guild explicitly recruiting for WoW activities")
+    add(r, 2, "guild subject plus direct recruitment verb")
   end
   if frRecruitment then
     add(r, 12, "French guild recruiting players")

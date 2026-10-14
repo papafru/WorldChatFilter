@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2 — 2026-10-14
+
+**German and Polish guild recruitment detection hotfix.** The new rules use multiple contextual signals, not specific guild/player names. Only `/World` messages are filtered; UI, custom lists, SavedVariables and historical statistics remain unchanged. All **40/40 Lua regression tests** passed for the development build before publication.
+
+- **German:** Detect informal social-guild invitations that advertise leveling, casual raids and community benefits together with contact phrases like `Melde dich per PM`, `Meldet euch per PN`, or invitations to join—even without class requests or numbered raid slots.
+- **Polish:** Recognize direct recruitment by a guild (`gildia rekrutuje`, `poszukuje`, `przyjmuje`) with WoW/raid context even when the message omits explicit player words like `graczy` or `osób`. Support additional Polish raid spellings (`rajd`, `rajdy`, `raidy`).
+- **Safeguards:** Preserve normal conversation, reported advertisements and negated references. Require multiple recruitment signals; never blacklist guild or player names.
+- **Tests:** New German and Polish fixtures cover original leak examples, paraphrased adverts, ordinary conversations, Careful/Balanced/Aggressive thresholds, non-World channel isolation, category/master toggles and the user's own messages.
+
 ## 1.1.1 — 2026-10-14
 
 **Multilingual guild advertisement detection hotfix.** Builds on the official v1.1.0; no settings migration, UI changes or new dependencies. Only the World chat channel is filtered. All 39 Lua regression test files passed on the v1.1-dev branch before release.
