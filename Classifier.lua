@@ -679,7 +679,8 @@ local function guild(text, lower, message)
       "nie wow", "nie w wow", "nie do wow", "to nie wow",
       "nie chodzi o wow", "zamiast wow", "not wow", "not about wow"})
   local plGame = raid or plWow or
-      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidowanie",
+      any(text, {"rajd", "rajdy", "rajdow", "raidow", "raidy", "raidami",
+          "raidach", "rajdami", "rajdach", "raidowanie",
           "pve", "pvp", "progres", "progress", "dungeony",
           "levelowanie", "expienie", "loot", "sr", "turtle",
           "turtla", "azeroth", "azerothu", "lvlowanie",
