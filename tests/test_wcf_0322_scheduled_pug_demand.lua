@@ -12,7 +12,7 @@ WorldChatFilterDB={enabled=true,filterGuild=true,filterLFG=true,filterServices=t
 for _,f in ipairs({'Core.lua','Statistics.lua','Classifier.lua','Filter.lua'}) do dofile(''..f) end
 WorldChatFilter.Initialize()
 local W=WorldChatFilter
-assert(W.VERSION=='1.1.1')
+assert(W.VERSION=='1.1.2')
 local ads={
  '<BRUTAL> ! Sub-hour runs with at least 1 guaranteed wipe! SR+, RT: Saturday+Sunday Pug! 17:00 ST! Healers and Mages in demand!',
  '<Example> Friday PUG 18:30 ST - Priests needed for our run',

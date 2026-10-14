@@ -1,7 +1,7 @@
 name: Publish WorldChatFilter v1.1.2
 
-# One-shot v1.1.2 stable hotfix. Only the addition of this workflow on main
-# triggers publishing, and any existing release with this tag is not overwritten.
+# One-shot v1.1.2 stable hotfix. This retry corrects the stable-version
+# assertions in legacy tests; an existing release is never overwritten.
 on:
   push:
     branches: [main]
