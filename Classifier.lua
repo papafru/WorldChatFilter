@@ -916,8 +916,11 @@ local function guild(text, lower, message)
           "lvln", "raiden", "raide", "pve", "pvp", "dungeons",
           "dungeon", "questen", "quests"})
   local dePitch = any(text, {"community", "gemeinschaft", "casuals",
-      "entspannte", "entspannt", "gemutlich", "gemeinsam", "zusammen",
-      "freundlich", "locker", "lockere", "sozial", "hilfsbereit"}) or
+      "entspannte", "entspannt", "entspannten",
+      "gemutlich", "gemutliche", "gemutlichen",
+      "gemeinsam", "gemeinsame", "gemeinsamen", "zusammen",
+      "freundlich", "locker", "lockere", "lockeren",
+      "sozial", "hilfsbereit"}) or
       somePhrase(text, {"kein stress", "kein hardcore",
           "wir helfen", "neue spieler", "raids geplant"})
   local deContactVerb = somePhrase(text, {"melde dich", "meld dich",
