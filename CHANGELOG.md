@@ -2,6 +2,7 @@
 
 ## 1.1.0-dev — In progress
 
+- Catch French guild recruitment that invites `joueur/joueurs` to Octo raids/leveling using `recrute` or `nous sommes ouverts`, including accents and short forms such as `lvling`. Require guild identity, player target and WoW context; protect questions, quotes and non-World channels. Regression test covers the <Ost Ardent> example without blacklisting a guild name.
 - Detect Spanish guild/community showcases advertising active members and PvE/weekly raids with a contact invitation (e.g. `/whisp para info`) but omitting `reclutamos`/`buscamos`. Recognize count-suffixed raid aliases like MC25 and Kara10. Require independent guild, gameplay and contact signals; protect quoted/ordinary discussion and World-only behavior, without guild-name blacklists.
 - Fix missed Polish guild recruitment combining `szuka osób` / `szukamy graczy`, a guild tag or team identifier, and clear WoW context such as MC/raids or loot (alongside phrases like `do wspólnej gry`). Handle accented/unaccented Polish; add discussion, World-only and toggle regressions without named-guild blacklists.
 - Fix missed Swedish guild invitations with a `<Guild>` tag, **alla är välkomna**, and activities such as *levla, chilla, raida*. Require multiple invitation and gameplay signals, with quotation/discussion safeguards; fold Swedish å/Å. Do not blacklist any guild or player names. Added false-positive and World-only regressions.

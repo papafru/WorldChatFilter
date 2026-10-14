@@ -690,6 +690,49 @@ local function guild(text, lower, message)
       ((plSearch and plPeople) or (plInvite and (guildTag or plTeam))) and
       not plDiscussion
 
+  -- French guild recruitment frequently says "recrute tout joueur" or
+  -- "nous sommes ouverts aux joueurs en lvling" rather than English role
+  -- terms. A strong advertisement must combine guild identity, a recruitment
+  -- action, a player audience, and independent WoW activity/context.
+  -- Never key off the guild's name or a single French word.
+  local frGroup = guildTag or noun or
+      any(text, {"guilde", "guildes", "communaute", "clan"})
+  local frRecruit = any(text, {"recrute", "recrutons", "recrutent",
+      "recrutement", "recrutements", "recherchons", "recherche",
+      "recherchent", "cherchons", "cherchent", "accueillons",
+      "accueille", "accueillent", "acceptons", "rejoignez"}) or
+      somePhrase(text, {"nous sommes ouverts", "nous sommes ouvertes",
+          "sommes ouverts aux", "sommes ouvertes aux",
+          "ouvert aux nouveaux", "ouverte aux nouveaux",
+          "venez nous rejoindre", "rejoignez nous", "bienvenue a tous"})
+  local frPeople = any(text, {"joueur", "joueurs", "membre", "membres",
+      "raideur", "raideurs", "debutant", "debutants", "nouveaux",
+      "nouvelles", "aventurier", "aventuriers", "personnes",
+      "levelers", "lvling"}) or
+      somePhrase(text, {"tout joueur", "tous les joueurs",
+          "aux joueurs", "pour les joueurs", "tous niveaux",
+          "tous les niveaux", "joueurs en leveling"})
+  local frGame = raid or
+      any(text, {"octo", "octowow", "wow", "turtle", "pve", "pvp",
+          "raids", "raid", "leveling", "lvling", "donjon", "donjons",
+          "quetes", "progression", "onyxia", "levelup"}) or
+      somePhrase(text, {"contenu d octo", "contenu qu offre octo",
+          "molten core", "ony clean", "mc clean", "en cours de leveling"})
+  -- Reports, translations and questions containing a quoted recruitment
+  -- sentence should stay visible, even when they name a tagged guild.
+  local frDiscussion = string.find(message, "?", 1, true) ~= nil or
+      somePhrase(text, {"est ce que", "quelqu un sait", "vous savez si",
+          "savez vous si", "je me demande", "que signifie",
+          "que veut dire", "qu est ce que", "qu en pensez vous",
+          "j ai entendu", "j ai lu", "j ai vu", "on m a dit",
+          "m a dit", "il parait que", "on dit que", "disent que",
+          "a dit que", "selon", "hier", "la semaine derniere",
+          "je cite", "ils ont annonce", "leur annonce",
+          "dans leur annonce", "ne recrute pas", "ne recrutent pas",
+          "plus de recrutement", "recrutement ferme"})
+  local frRecruitment = frGroup and frRecruit and frPeople and frGame and
+      not frDiscussion
+
   -- Latin-script Russian recruitment: common spellings vary (ishet/ishchet,
   -- ishem/ischem, sobiraem/sobirayem, ...).  This is a COMBINATION rule,
   -- not a blacklist of specific messages or guild names. Require a search
@@ -996,7 +1039,7 @@ local function guild(text, lower, message)
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
-      csRecruitment or softRecruitment or swRecruitment or plRecruitment or ruRecruitment or
+      csRecruitment or softRecruitment or swRecruitment or plRecruitment or frRecruitment or ruRecruitment or
       guildCommunityRecruitment or italianGuildRecruitment or
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or taggedClassRecruitment or taggedOpenRecruitment or
@@ -1091,6 +1134,11 @@ local function guild(text, lower, message)
     if plSearch and plPeople then add(r, 3, "Polish player/member search") end
     if plTeam or guildTag then add(r, 2, "Polish guild/team identity") end
     if plInvite then add(r, 2, "Polish invitation") end
+  end
+  if frRecruitment then
+    add(r, 12, "French guild recruiting players")
+    add(r, 3, "French player/audience invitation")
+    if guildTag then add(r, 2, "tagged guild advertising WoW content") end
   end
   if csRecruitment then
     if csSearch then add(r, 4, "Czech/Slovak recruitment intent") end
