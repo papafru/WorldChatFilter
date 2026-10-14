@@ -1,0 +1,37 @@
+name: Validate v1.1.2 development hotfix
+
+on:
+  push:
+    branches: [v1.1.2-dev]
+
+permissions:
+  contents: read
+
+jobs:
+  lua-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run complete Lua test suite
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+          python3 tests/run_tests.py lua5.1
+      - name: Prepare review-only addon ZIP
+        run: |
+          set -eu
+          mkdir -p dist/WorldChatFilter/Media
+          for file in WorldChatFilter.toc Core.lua CustomFilters.lua PanelTheme.lua Color.lua Statistics.lua HelpUI.lua Classifier.lua Filter.lua CustomFiltersUI.lua UI.lua; do
+            test -s "$file"
+            cp "$file" dist/WorldChatFilter/
+          done
+          cp Media/WorldChatFilterOrb.tga dist/WorldChatFilter/Media/
+          (cd dist && zip -qr ../WorldChatFilter-v1.1.2-dev.zip WorldChatFilter)
+          unzip -t WorldChatFilter-v1.1.2-dev.zip
+      - name: Upload review build
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorldChatFilter-v1.1.2-dev
+          path: WorldChatFilter-v1.1.2-dev.zip
+          retention-days: 30
+          if-no-files-found: error
