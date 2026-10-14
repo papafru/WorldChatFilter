@@ -186,7 +186,7 @@ local merchandise = {"gold","g","mats","materials","herbs","herb","ore","ores","
  "recipe","recipes","mount","mounts","stack","stacks","enchants","enchant","cloth","potions","potion"}
 local services = {"boost","boosts","boosting","carry","carries","carrying","summon","summons","summoning",
  "portal","portals","transport","powerlevel","powerleveling","powerlevelling","crafting","enchanting"}
-local contact = {"pst","whisper","whisp","pm","wisp","message","dm","/w"}
+local contact = {"pst","whisper","whisp","pm","pn","wisp","message","dm","/w"}
 local recruit = {"recruiting","recruitment","recruits","applicants",
  "rekrutiert","rekrutieren","rekrutierung","recrute","recrutement","recluta","reclutando"}
 local guildNouns = {"guild","guilds","gilde","gilden","guilde","gildia","static","roster"}
