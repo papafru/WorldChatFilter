@@ -190,6 +190,8 @@ local contact = {"pst","whisper","whisp","pm","pn","wisp","message","dm","/w"}
 local recruit = {"recruiting","recruitment","recruits","applicants",
  "rekrutiert","rekrutieren","rekrutierung","recrute","recrutement","recluta","reclutando"}
 local guildNouns = {"guild","guilds","gilde","gilden","guilde","gildia","static","roster"}
+local raidShowcaseInstances = {"mc","ony","zg","k10","kara10","bwl",
+    "aq20","aq40","naxx","onyxia"}
 -- Class names are *context*, never an advertisement by themselves. Include plural
 -- recruitment listings ("Mages/Shamans/Warlocks") and Vanilla class nicknames.
 -- Static raid weekday vocabulary: avoid allocating a table per chat line.
@@ -1146,12 +1148,11 @@ local function guild(text, lower, message)
   -- Branded organized-raid showcase: multiple raid aliases + hosting
   -- + explicit Discord invitation. Discord URLs or raid names alone are
   -- insufficient and should remain visible in normal conversation.
-  local raidNames = {"mc", "ony", "zg", "k10", "kara10", "bwl",
-      "aq20", "aq40", "naxx", "onyxia"}
+  -- Raid aliases are reused from a module-scope table.
   local raidKinds = 0
   local raidIndex
-  for raidIndex=1,table.getn(raidNames) do
-    if contains(text, raidNames[raidIndex]) then raidKinds=raidKinds+1 end
+  for raidIndex=1,table.getn(raidShowcaseInstances) do
+    if contains(text, raidShowcaseInstances[raidIndex]) then raidKinds=raidKinds+1 end
   end
   local hostingBrand = string.find(text, "^ [%w]+ is hosting ") ~= nil or
       string.find(text, "^ [%w]+ hosts ") ~= nil or

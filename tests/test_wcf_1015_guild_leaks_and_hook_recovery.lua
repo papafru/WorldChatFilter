@@ -150,7 +150,7 @@ local before=#printed
 SlashCmdList.WORLDCHATFILTER("doctor")
 assert(#printed>=before+3)
 local messages=table.concat(printed," ")
-assert(string.find(messages,"version 1.1.2",1,true))
+assert(string.find(messages,"version 1.1.3-dev",1,true))
 assert(string.find(messages,"Polish test=BLOCK",1,true))
 assert(string.find(messages,"hook=attached",1,true))
 assert(string.find(messages,"World gate=OK",1,true))
