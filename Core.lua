@@ -176,6 +176,34 @@ SlashCmdList["WORLDCHATFILTER"] = function(raw)
     else
       WCF.Print("Usage: /wcf color on|off|picker|reset (or /wcf -> World Chat Color)")
     end
+  elseif command == "doctor" then
+    if not WCF.db then WCF.Initialize() end
+    local attached = type(ChatFrame_OnEvent) == "function" and
+        WCF.chatHook and ChatFrame_OnEvent == WCF.chatHook
+    local channelOK = WCF.IsWorldChannel("World", "4. World", 7)
+    local sample = "Polska gildia rekrutuje. Robimy wszystkie rajdy."
+    local category, score, why, blocked, threshold = WCF.ClassifyMessage(sample, true)
+    WCF.Print("Diagnostics: version " .. tostring(WCF.VERSION) ..
+        "; master=" .. (WCF.db.enabled and "ON" or "OFF") ..
+        "; Guild=" .. (WCF.db.filterGuild and "ON" or "OFF") ..
+        "; mode=" .. tostring(WCF.db.sensitivity))
+    WCF.Print("Diagnostics: hook=" .. (attached and "attached" or "not at top") ..
+        "; World gate=" .. (channelOK and "OK" or "FAIL") ..
+        "; repairs=" .. tostring(WCF.hookRepairs or 0))
+    WCF.Print("Diagnostics: Polish test=" .. (blocked and "BLOCK" or "ALLOW") ..
+        " | " .. tostring(category or "Chat") ..
+        " | score " .. tostring(score) .. "/" .. tostring(threshold) ..
+        " | " .. tostring(why))
+    WCF.Print("If messages leak, use /wcf channeldebug and /wcf test <message>.")
+  elseif command == "rehook" then
+    if WCF.CheckChatHook then
+      WCF.CheckChatHook(true)
+      WCF.Print("Chat hook: " ..
+          ((WCF.chatHook and ChatFrame_OnEvent == WCF.chatHook) and
+              "attached" or "not at top"))
+    else
+      WCF.Print("Chat hook recovery unavailable.")
+    end
   elseif command == "test" then
     if not WCF.db then WCF.Initialize() end
     if rest == "" then WCF.Print("Usage: /wcf test <message>") return end
@@ -205,6 +233,22 @@ SlashCmdList["WORLDCHATFILTER"] = function(raw)
   end
 end
 
+-- A competing addon may overwrite ChatFrame_OnEvent after login.
+-- Verify our wrapper periodically, with a capped number of recoveries to
+-- avoid re-hook loops with an addon that keeps reassigning the handler.
+WCF.hookRepairs = 0
+function WCF.CheckChatHook(manual)
+  if not WCF.chatHook or type(ChatFrame_OnEvent) ~= "function" then return false end
+  if ChatFrame_OnEvent == WCF.chatHook then return true end
+  if manual then WCF.hookRepairs = 0 end
+  if WCF.hookRepairs >= 4 then return false end
+  if WCF.InstallChatHook then
+    WCF.InstallChatHook()
+    WCF.hookRepairs = WCF.hookRepairs + 1
+  end
+  return ChatFrame_OnEvent == WCF.chatHook
+end
+
 local initFrame = CreateFrame("Frame", "WorldChatFilterInitFrame")
 initFrame:RegisterEvent("VARIABLES_LOADED")
 initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -219,5 +263,18 @@ initFrame:SetScript("OnEvent", function()
     if WCF.InstallChatHook then WCF.InstallChatHook() end
     if WCF.InstallCustomPlayerPopup then WCF.InstallCustomPlayerPopup() end
     if WCF.RefreshWorldColor then WCF.RefreshWorldColor() end
+    WCF.hookRepairs = 0
   end
+end)
+
+-- Old Vanilla-style OnUpdate scripts have no reliable elapsed argument;
+-- GetTime() checks at most once every five seconds.
+local nextHookCheck = 0
+initFrame:SetScript("OnUpdate", function()
+  if not WCF.db or not WCF.db.enabled then return end
+  if type(GetTime) ~= "function" then return end
+  local now = GetTime()
+  if now < nextHookCheck then return end
+  nextHookCheck = now + 5
+  WCF.CheckChatHook(false)
 end)

@@ -44,6 +44,8 @@ local pageData={
       {"/wcf test <message>","Print classifier result for sample text"},
       {"/wcf debug","Toggle blocked-message explanations"},
       {"/wcf channeldebug","Log channel metadata for diagnosis"},
+      {"/wcf doctor","Check version, Guild toggle, hook and sample classification"},
+      {"/wcf rehook","Reattach chat filtering if another addon replaced its hook"},
       {"World chat only","Trade, Party, Guild, whispers stay untouched"}
     }
   }

@@ -1024,6 +1024,16 @@ local function guild(text, lower, message)
       somePhrase(text, {"join us", "join our", "join my guild", "join the guild",
           "join our ranks", "come join", "invited to join"})
   local directGuildJoin = joinCallToAction and (noun or guildTag)
+  -- LF guild / LF RU guild leveling: direct guild searches, not advice.
+  local leadingGuildSearch = (string.find(text, "^ lf guild ") ~= nil or
+      string.find(text, "^ lf [%a]+ guild ") ~= nil or
+      string.find(text, "^ looking for guild ") ~= nil or
+      string.find(text, "^ looking for [%a]+ guild ") ~= nil or
+      string.find(text, "^ lf gilde ") ~= nil) and
+      not somePhrase(text, {"lf guild advice", "lf guild name",
+          "lf guild tips", "looking for guild advice",
+          "looking for guild name", "what does lf",
+          "what is lf", "the phrase lf", "i saw lf", "i heard lf"})
   local playerSearch = searching or somePhrase(text, {
       "looking mostly for", "looking mainly for", "looking primarily for",
       "now looking", "looking to recruit", "recruiting players"})
@@ -1108,6 +1118,54 @@ local function guild(text, lower, message)
   local guildShowcase = guildTag and raid and
       ((noun and (raidProgress or guildWebsite)) or
        (raidProgress and guildWebsite))
+
+  -- A tagged guild can promote social/leveling/raiding lifestyle without
+  -- literally inviting applicants. Require tagged self-description,
+  -- target audience, game activity and promotional benefit cues.
+  local passiveStatement = string.find(lower, "<[^<>]+>%s+is%s+") ~= nil or
+      somePhrase(text, {"we are a guild", "we re a guild",
+          "we are a social guild", "our guild is a"})
+  local passiveAudience = somePhrase(text, {"guild for", "for mature players",
+      "for new players", "for casual players", "players just like you",
+      "for friendly players", "for helpful players"})
+  local passivePitch = any(text, {"community", "friendship", "social",
+      "casual", "casuals", "welcoming", "friendly", "helpful"}) or
+      somePhrase(text, {"drama free", "family friendly", "no rush"})
+  local passiveGameplay = raid or
+      any(text, {"octowow", "turtle", "wow", "leveling", "levelling",
+          "dungeons", "endgame", "pve", "pvp"})
+  local passiveDiscussion = somePhrase(text, {"i think", "i heard", "i read",
+      "i saw", "someone said", "yesterday", "last night", "do you think",
+      "the guild says", "the ad says", "the advertisement says",
+      "what does", "what is", "my guild was", "my guild used to",
+      "is it true", "is that true", "can anyone recommend"})
+  local passiveGuildPromo = guildTag and noun and passiveStatement and
+      passiveAudience and passivePitch and passiveGameplay and
+      not passiveDiscussion
+
+  -- Branded organized-raid showcase: multiple raid aliases + hosting
+  -- + explicit Discord invitation. Discord URLs or raid names alone are
+  -- insufficient and should remain visible in normal conversation.
+  local raidNames = {"mc", "ony", "zg", "k10", "kara10", "bwl",
+      "aq20", "aq40", "naxx", "onyxia"}
+  local raidKinds = 0
+  local raidIndex
+  for raidIndex=1,table.getn(raidNames) do
+    if contains(text, raidNames[raidIndex]) then raidKinds=raidKinds+1 end
+  end
+  local hostingBrand = string.find(text, "^ [%w]+ is hosting ") ~= nil or
+      string.find(text, "^ [%w]+ hosts ") ~= nil or
+      string.find(text, "^ [%w]+ hosting ") ~= nil or guildTag
+  local raidHosting = any(text, {"hosting", "hosts", "organizing"}) or
+      somePhrase(text, {"is running", "organizes", "we host"})
+  local raidDiscordAction = somePhrase(text, {"checkout on", "check out",
+      "join our discord", "join the discord", "discord for info",
+      "discord for invite", "discord to join",
+      "more info on discord", "find us on discord", "visit our discord"})
+  local raidCommunityPromo = hostingBrand and raidHosting and
+      raidKinds >= 2 and discord and raidDiscordAction and
+      not advertisementDiscussion
+
   -- Explicit guild invitation + raid + time/timezone is a recruitment ad
   -- whatever its word order. A trailing '?' does not exempt this structure.
   local inviteCue = invite or spanishInvitation or
@@ -1118,7 +1176,9 @@ local function guild(text, lower, message)
       somePhrase(text, {"server time", "realm time", "time zone"})
   local raidTime = string.find(message, "%d%d?:%d%d") ~= nil or timeZone
   local timedGuildInvitation = guildTag and inviteCue and raid and raidTime
-  r.ignoreQuestionPenalty = timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
+  r.ignoreQuestionPenalty = timedGuildInvitation or taggedSpeakerSearch or
+      directGuildJoin or leadingGuildSearch or passiveGuildPromo or
+      raidCommunityPromo
   r.intent = headline or
       (noun and (recruiting or invite or (welcome and (any(text, contact) or promo)) or searchingForGroup)) or
       (recruiting and recruitingContext) or (invite and noun and promo) or
@@ -1128,13 +1188,29 @@ local function guild(text, lower, message)
       ongoingRaidRecruitment or guildFormationRecruitment or scheduledClassRecruitment or
        germanRaidRecruitment or deSocialInvitation or taggedClassRecruitment or taggedOpenRecruitment or
        spanishGuildPromo or spanishOpenRecruitment or spanishGuildShowcase or
-       guildShowcase or timedGuildInvitation or taggedSpeakerSearch or directGuildJoin
+       guildShowcase or timedGuildInvitation or taggedSpeakerSearch or
+       directGuildJoin or leadingGuildSearch or passiveGuildPromo or raidCommunityPromo
   if not r.intent then return r end
   if taggedSpeakerSearch then
     add(r, 22, "tagged guild seeking X speakers")
   end
   if directGuildJoin then
     add(r, 12, "direct join invitation with guild/community context")
+  end
+  if leadingGuildSearch then
+    add(r, 14, "leading LF/looking-for guild request")
+    if any(text, {"ru", "rus", "russian", "english", "greek",
+          "german", "french", "polish"}) then
+      add(r, 2, "guild language preference")
+    end
+  end
+  if passiveGuildPromo then
+    add(r, 14, "tagged guild promoting social community to players")
+    add(r, 2, "guild audience plus WoW gameplay")
+  end
+  if raidCommunityPromo then
+    add(r, 14, "organized multi-raid community Discord promotion")
+    add(r, 3, "raid hosting and direct external invitation")
   end
   if taggedClassRecruitment then
     add(r, 10, "guild seeking classes/roles for roster")

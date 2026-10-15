@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.3-dev — In progress
+
+- Recognize social/casual guild showcases aimed at players even without direct "recruiting" words (e.g. tagged social guild for casual raiders).
+- Catch compact language-modified guild searches (`LF RU guild leveling`) as Guild ads.
+- Recognize named raid organizers promoting multiple raid events with a direct Discord call-to-action.
+- Add `/wcf doctor` for runtime version, Guild/master toggles, hook status, World channel gate and a built-in Polish classifier sample; `/wcf rehook` to restore a displaced hook manually.
+- Periodically verify/re-attach the chat hook if another addon replaces it after login, with limited retries to avoid hook wars.
+- Regression-test the previously fixed but visibly leaked Polish guild ad through World chat in addition to the newly reported messages, with false-positive and non-World safeguards.
+
 ## 1.1.2 — 2026-10-14
 
 **German and Polish guild recruitment detection hotfix.** The new rules use multiple contextual signals, not specific guild/player names. Only `/World` messages are filtered; UI, custom lists, SavedVariables and historical statistics remain unchanged. All **40/40 Lua regression tests** passed for the development build before publication.
